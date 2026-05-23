@@ -392,7 +392,7 @@ export default function Home() {
         <h1 className="title-gradient">책탐정 도서나루</h1>
         <p className="subtitle">
           칼데콧 · 안데르센 · 볼로냐 · 카네기 · 국립어린이도서관 · 서울시교육청 · 서울어린이도서관 · 국립중앙도서관 · 교과연계도서{" "}
-          <strong>{booksWithIsbn.length.toLocaleString()}권</strong>을 AI로 검색하고,
+          <strong>{allBooks.length.toLocaleString()}권</strong>을 AI로 검색하고,
           내 근처 도서관 대출 여부를 바로 확인하세요.
         </p>
 
