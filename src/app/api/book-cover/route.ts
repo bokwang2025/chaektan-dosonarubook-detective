@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 const KAKAO_KEY = process.env.KAKAO_REST_API_KEY;
 
+// Kakao CDN URL에서 실제 이미지 URL 추출
+// https://search1.kakaocdn.net/thumb/...?fname=https%3A%2F%2Ft1.kakaocdn.net%2F...
+// → https://t1.kakaocdn.net/...
+function extractDirectUrl(kakaoUrl: string): string {
+  try {
+    const fname = new URL(kakaoUrl).searchParams.get("fname");
+    return fname ? decodeURIComponent(fname) : kakaoUrl;
+  } catch {
+    return kakaoUrl;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const isbn = new URL(req.url).searchParams.get("isbn");
   if (!isbn) return NextResponse.json({ url: null });
@@ -16,11 +28,11 @@ export async function GET(req: NextRequest) {
     );
     const data = await res.json();
     const thumbnail = (data?.documents?.[0]?.thumbnail as string) || null;
-    // 카카오 썸네일 → 더 큰 버전
-    const large = thumbnail
-      ? thumbnail.replace(/C\d+x\d+/, "R120x174")
-      : null;
-    return NextResponse.json({ url: large ?? thumbnail });
+    if (!thumbnail) return NextResponse.json({ url: null });
+
+    // CDN 리사이저 URL → 직접 스토리지 URL (t1.kakaocdn.net)
+    const directUrl = extractDirectUrl(thumbnail);
+    return NextResponse.json({ url: directUrl });
   } catch {
     return NextResponse.json({ url: null });
   }

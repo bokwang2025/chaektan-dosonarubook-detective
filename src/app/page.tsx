@@ -325,7 +325,9 @@ export default function Home() {
   const fetchLibraries = useCallback(async (book: Book, loc: { lat: number; lng: number } | null) => {
     setLibLoading(true);
     try {
-      const params = new URLSearchParams({ isbn: book.isbn });
+      // 한국 도서관은 한국 ISBN으로 검색해야 찾을 수 있음
+      const searchIsbn = book.koreanIsbn || book.isbn;
+      const params = new URLSearchParams({ isbn: searchIsbn });
       if (loc) {
         params.set("lat", String(loc.lat));
         params.set("lng", String(loc.lng));
@@ -588,6 +590,7 @@ export default function Home() {
               isbn={book.koreanIsbn || book.isbn}
               title={book.koreanTitle}
               source={book.source}
+              originalIsbn={book.isbn !== book.koreanIsbn ? book.isbn : undefined}
               cachedUrl={
                 CONFIRMED_COVERS[book.koreanIsbn]?.url ||
                 CONFIRMED_COVERS[book.isbn]?.url
