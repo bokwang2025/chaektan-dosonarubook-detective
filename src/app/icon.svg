@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- 배경 -->
+  <rect width="32" height="32" rx="7" fill="#0f766e"/>
+
+  <!-- 책 왼쪽 페이지 -->
+  <rect x="5" y="8" width="10" height="14" rx="1.5" fill="#ffffff"/>
+  <!-- 책 오른쪽 페이지 -->
+  <rect x="17" y="8" width="10" height="14" rx="1.5" fill="#ccfbf1"/>
+  <!-- 책 가운데 척추 -->
+  <rect x="14.5" y="7" width="3" height="16" rx="1" fill="#134e4a"/>
+
+  <!-- 왼쪽 페이지 줄 -->
+  <line x1="8" y1="12" x2="13" y2="12" stroke="#0f766e" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="8" y1="15" x2="13" y2="15" stroke="#0f766e" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="8" y1="18" x2="11" y2="18" stroke="#0f766e" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- 돋보기 원 -->
+  <circle cx="23" cy="21" r="5.5" fill="none" stroke="#f59e0b" stroke-width="2.2"/>
+  <!-- 돋보기 손잡이 -->
+  <line x1="27" y1="25" x2="30" y2="28" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- 돋보기 렌즈 반짝이 -->
+  <circle cx="21.5" cy="19.5" r="1" fill="rgba(255,255,255,0.5)"/>
+</svg>
