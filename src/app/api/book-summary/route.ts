@@ -31,7 +31,7 @@ async function summarizeWithClaude(params: {
     if (params.kakaoContents) {
       contextLines.push(`[출판사 소개글 참고]\n${params.kakaoContents}`);
     }
-    if (params.hook) contextLines.push(`[한줄 소개] ${params.hook}`);
+    if (params.hook) contextLines.push(`[줄거리 힌트 — 가장 중요, 이 내용을 중심으로 줄거리를 써줘] ${params.hook}`);
     if (params.tags) contextLines.push(`[주제 태그] ${params.tags}`);
 
     const prompt = `다음 정보를 바탕으로 책의 줄거리를 3문장으로 요약해줘.
