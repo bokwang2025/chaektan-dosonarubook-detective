@@ -339,6 +339,10 @@ body {
   letter-spacing: .02em; text-align: center; line-height: 1.45;
   max-width: 100%;
 }
+/* 배지 텍스트가 길 때 (서울어린이도서관 등) 폰트 축소 */
+.source-badge.badge-seoul {
+  font-size: .64rem; letter-spacing: 0;
+}
 /* 추가 출처 배지 (작은 크기) */
 .source-badge-sm {
   font-size: .65rem; padding: .2rem .55rem; gap: .25rem;
