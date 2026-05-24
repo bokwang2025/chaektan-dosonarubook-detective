@@ -393,6 +393,7 @@ export default function Home() {
         isbn:         book.koreanIsbn   || book.isbn || "",
         origIsbn:     book.isbn         || "",
         hook:         book.hook         || "",
+        notice:       book.notice       || "",
         tags:         (book.tags || []).slice(0, 8).join(", "),
         targetAge:    book.targetAge    || "",
         awardName:    book.awardName    || "",

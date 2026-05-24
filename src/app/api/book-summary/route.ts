@@ -21,7 +21,7 @@ async function fetchKakaoContents(isbn: string): Promise<string | null> {
 // Claude — 카카오 내용을 바탕으로 완성된 줄거리 생성
 async function summarizeWithClaude(params: {
   title: string; author: string; awardName: string; targetAge: string;
-  tags: string; hook: string; kakaoContents: string | null;
+  tags: string; hook: string; notice: string; kakaoContents: string | null;
 }): Promise<string | null> {
   try {
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
@@ -31,6 +31,7 @@ async function summarizeWithClaude(params: {
     if (params.kakaoContents) {
       contextLines.push(`[출판사 소개글 참고]\n${params.kakaoContents}`);
     }
+    if (params.notice) contextLines.push(`[도서관 소개글 참고]\n${params.notice}`);
     if (params.hook) contextLines.push(`[줄거리 힌트 — 가장 중요, 이 내용을 중심으로 줄거리를 써줘] ${params.hook}`);
     if (params.tags) contextLines.push(`[주제 태그] ${params.tags}`);
 
@@ -73,6 +74,7 @@ export async function GET(req: NextRequest) {
   const targetAge = searchParams.get("targetAge") || "";
   const tags      = searchParams.get("tags")      || "";
   const hook      = searchParams.get("hook")      || "";
+  const notice    = searchParams.get("notice")    || "";
 
   if (!title) return NextResponse.json({ summary: null });
 
@@ -82,7 +84,7 @@ export async function GET(req: NextRequest) {
 
   // 2. Claude로 완성된 줄거리 생성 (카카오 내용 있으면 그걸 바탕으로, 없으면 메타데이터로)
   const summary = await summarizeWithClaude({
-    title, author, awardName, targetAge, tags, hook, kakaoContents,
+    title, author, awardName, targetAge, tags, hook, notice, kakaoContents,
   });
 
   if (summary) return NextResponse.json({ summary, source: kakaoContents ? "kakao+claude" : "claude" });
