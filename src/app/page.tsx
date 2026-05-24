@@ -690,6 +690,28 @@ export default function Home() {
             {!book.aiReason && book.hook && (
               <div className="hook-text">{book.hook}</div>
             )}
+            {!book.aiReason && !book.hook && (() => {
+              // hook 없을 때 fallback: 태그 조합 → 없으면 줄거리 유도
+              const allTags = [
+                ...(book.situationTags || []),
+                ...(book.emotionTags   || []),
+                ...(book.topicTags     || []),
+                ...(book.tags          || []),
+              ];
+              const unique = [...new Set(allTags)].slice(0, 4);
+              if (unique.length >= 2) {
+                return (
+                  <div className="hook-text hook-text-auto">
+                    {unique.join(", ")} 등을 담은 책이에요.
+                  </div>
+                );
+              }
+              return (
+                <div className="hook-text hook-text-hint" onClick={() => openDetail(book)}>
+                  📖 줄거리 보기를 눌러 내용을 확인하세요
+                </div>
+              );
+            })()}
 
             {(book.targetAge || book.tags.length > 0) && (
               <div className="tags-container">

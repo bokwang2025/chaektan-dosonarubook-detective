@@ -571,6 +571,25 @@ body {
   .book-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
 }
 
+/* ── hook fallback 텍스트 ───────────────── */
+.hook-text-auto {
+  color: #64748b !important;
+  font-style: normal !important;
+  font-size: .8rem !important;
+}
+.hook-text-hint {
+  color: #94a3b8 !important;
+  font-size: .78rem !important;
+  cursor: pointer;
+  border: 1px dashed #cbd5e1 !important;
+  border-radius: .5rem;
+  padding: .45rem .6rem !important;
+  background: transparent !important;
+  text-align: center;
+  transition: color .15s, border-color .15s;
+}
+.hook-text-hint:hover { color: var(--accent) !important; border-color: var(--accent) !important; }
+
 /* ── 어린이(전체) 연령 태그 ─────────────── */
 .tag-chip-age-broad {
   background: #faf5ff; border-color: #e9d5ff !important;
