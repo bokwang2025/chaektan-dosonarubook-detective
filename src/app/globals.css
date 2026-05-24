@@ -571,6 +571,19 @@ body {
   .book-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
 }
 
+/* ── 어린이(전체) 연령 태그 ─────────────── */
+.tag-chip-age-broad {
+  background: #faf5ff; border-color: #e9d5ff !important;
+  color: #7c3aed !important; font-style: italic;
+}
+.chip-age-broad {
+  border-style: dashed !important;
+  opacity: .85;
+}
+.age-broad-note {
+  font-size: .72rem; color: #9ca3af; font-weight: 400;
+}
+
 /* ── 독서활동 태그 ──────────────────────── */
 .tag-chip-activity {
   background: #fef3c7; border: 1px solid #fde68a;
@@ -584,16 +597,19 @@ body {
   display: flex; gap: .4rem; margin-top: .4rem;
 }
 .detail-btn {
-  display: flex; align-items: center; justify-content: center; gap: .4rem;
+  display: flex; align-items: center; justify-content: center; gap: .35rem;
   flex: 1;
   background: rgba(67,97,238,.06); border: 1.5px solid rgba(67,97,238,.2);
-  color: var(--accent); padding: .6rem .4rem; border-radius: .65rem;
-  cursor: pointer; font-size: .78rem; font-weight: 600;
+  color: var(--accent); padding: .6rem .3rem; border-radius: .65rem;
+  cursor: pointer; font-size: .76rem; font-weight: 600;
   transition: all .2s; font-family: inherit;
+  white-space: nowrap; overflow: hidden;
 }
 .detail-btn:hover { background: rgba(67,97,238,.12); border-color: var(--accent); }
 .card-btns .library-btn {
   flex: 1; margin-top: 0; width: auto;
+  font-size: .76rem; white-space: nowrap; overflow: hidden;
+  padding-left: .3rem; padding-right: .3rem;
 }
 
 /* ── 상세 모달 ──────────────────────────── */

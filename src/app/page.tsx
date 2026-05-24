@@ -47,8 +47,14 @@ const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeCla
 // 수상 출처 (뱃지 금/은 구분 적용)
 const AWARD_SOURCES = new Set(["칼데콧", "안데르센", "볼로냐", "카네기"]);
 
-// 연령 순서 정의 (6범주만 — "어린이"는 범주 불명확으로 칩에서 제외, 기본 탐색에만 노출)
-const AGE_ORDER = ["5세 미만", "6-7세", "초등1-2", "초등3-4", "초등5-6", "청소년"];
+// 연령 순서 정의
+// "어린이"(3,716권)는 출처에서 세분화 없이 제공 → "전체 어린이"로 표시, 필터에는 포함
+const AGE_ORDER = ["6-7세", "초등1-2", "초등3-4", "초등5-6", "청소년", "어린이"];
+
+// "어린이" → UI 표시용 레이블
+function ageLabel(age: string): string {
+  return age === "어린이" ? "전체 어린이" : age;
+}
 
 // 색상 테마
 const COLOR_THEMES: Record<string, {
@@ -357,12 +363,17 @@ export default function Home() {
     setSummaryLoading(true);
     try {
       const params = new URLSearchParams({
-        title: book.koreanTitle,
-        author: book.author,
-        tags: [...(book.tags || []), ...(book.situationTags || []), ...(book.emotionTags || [])].slice(0, 10).join(", "),
-        hook: book.hook || "",
-        targetAge: book.targetAge || "",
-        awardName: book.awardName || "",
+        title:        book.koreanTitle,
+        author:       book.author,
+        hook:         book.hook         || "",
+        notice:       book.notice       || "",
+        situationTags:(book.situationTags || []).join(", "),
+        emotionTags:  (book.emotionTags   || []).join(", "),
+        topicTags:    (book.topicTags     || []).join(", "),
+        tags:         (book.tags || []).slice(0, 8).join(", "),
+        targetAge:    book.targetAge    || "",
+        awardName:    book.awardName    || "",
+        awardYear:    book.awardYear    || "",
       });
       const res = await fetch(`/api/book-summary?${params}`);
       const data = await res.json();
@@ -510,9 +521,10 @@ export default function Home() {
               {availableAges.map((age) => (
                 <button
                   key={age}
-                  className={`chip ${selectedAges.includes(age) ? "active" : ""}`}
+                  className={`chip ${selectedAges.includes(age) ? "active" : ""} ${age === "어린이" ? "chip-age-broad" : ""}`}
                   onClick={() => toggleAge(age)}
-                >{age}</button>
+                  title={age === "어린이" ? "출처에서 세분화 없이 제공된 도서 (서울시교육청·국립중앙도서관 등)" : undefined}
+                >{ageLabel(age)}</button>
               ))}
             </div>
           </div>
@@ -684,7 +696,9 @@ export default function Home() {
             {(book.targetAge || book.tags.length > 0) && (
               <div className="tags-container">
                 {book.targetAge && (
-                  <span className="tag-chip tag-chip-age">{book.targetAge}</span>
+                  <span className={`tag-chip tag-chip-age ${book.targetAge === "어린이" ? "tag-chip-age-broad" : ""}`}>
+                    {ageLabel(book.targetAge)}
+                  </span>
                 )}
                 {book.activity && book.activity.trim() && (
                   <span className="tag-chip tag-chip-activity">✏️ 독서활동</span>
@@ -775,7 +789,12 @@ export default function Home() {
                   <div className="detail-award">{detailBook.sourceLabel} {detailBook.awardYear && `(${detailBook.awardYear})`}</div>
                 )}
                 {detailBook.targetAge && (
-                  <div className="detail-age">대상 연령: {detailBook.targetAge}</div>
+                  <div className="detail-age">
+                    대상 연령: {ageLabel(detailBook.targetAge)}
+                    {detailBook.targetAge === "어린이" && (
+                      <span className="age-broad-note"> (출처 분류 기준)</span>
+                    )}
+                  </div>
                 )}
                 <div className="detail-tags">
                   {detailBook.tags.slice(0, 8).map((t, i) => (
