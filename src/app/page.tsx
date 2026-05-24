@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, MapPin, Library, BookOpen, Star, Medal,
-  Sparkles, X, ChevronDown, Loader2,
+  Sparkles, X, ChevronDown, Loader2, Info,
 } from "lucide-react";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
@@ -59,16 +59,16 @@ const allBooks = booksData as Book[];
 // ISBN 있는 책만 (서울어린이도서관 300권 제외)
 const booksWithIsbn = allBooks.filter((b) => b.isbn && b.isbn.length > 0);
 
-const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeClass: string }> = {
-  "칼데콧":          { label: "🏅 칼데콧",        chipClass: "active-gold",    badgeClass: "badge-caldecott" },
-  "안데르센":        { label: "🌟 안데르센",       chipClass: "active-teal",    badgeClass: "badge-andersen"  },
-  "볼로냐":          { label: "🎨 볼로냐",         chipClass: "active-orange",  badgeClass: "badge-bologna"   },
-  "카네기":          { label: "📖 카네기",         chipClass: "active-purple",  badgeClass: "badge-carnegie"  },
-  "국립어린이도서관": { label: "📚 국립어린이도서관", chipClass: "active-green",   badgeClass: "badge-national"  },
-  "서울시교육청":    { label: "🏫 서울시교육청",    chipClass: "active",         badgeClass: "badge-edu"       },
-  "서울어린이도서관": { label: "🌸 서울어린이도서관", chipClass: "active-pink",    badgeClass: "badge-seoul"     },
-  "국립중앙도서관":  { label: "🏛️ 국립중앙도서관",  chipClass: "active-indigo",  badgeClass: "badge-nlcf"      },
-  "교과연계도서":    { label: "📝 교과연계도서",    chipClass: "active-brown",   badgeClass: "badge-cur"       },
+const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeClass: string; desc: string }> = {
+  "칼데콧":          { label: "🏅 칼데콧",        chipClass: "active-gold",    badgeClass: "badge-caldecott", desc: "미국 최고 그림책 일러스트레이터상. 매년 ALA가 미국 아동 그림책 작가에게 수여. 세계적으로 인정받는 그림책이 많습니다." },
+  "안데르센":        { label: "🌟 안데르센",       chipClass: "active-teal",    badgeClass: "badge-andersen",  desc: "세계 아동문학의 노벨상. 글작가·그림작가 부문으로 나뉘어 2년마다 수상. 전 세계 우수 아동도서 작가를 선정합니다." },
+  "볼로냐":          { label: "🎨 볼로냐",         chipClass: "active-orange",  badgeClass: "badge-bologna",   desc: "이탈리아 볼로냐 국제아동도서전 최우수상. Fiction·Non-fiction·Comics·New Horizons 등 부문별 수상. 예술성 높은 그림책이 많습니다." },
+  "카네기":          { label: "📖 카네기",         chipClass: "active-purple",  badgeClass: "badge-carnegie",  desc: "영국 최고 권위의 아동문학상. 어린이·청소년 소설 중심이며 Illustration 부문도 있습니다." },
+  "국립어린이도서관": { label: "📚 국립어린이도서관", chipClass: "active-green",   badgeClass: "badge-national",  desc: "국립어린이청소년도서관 사서 추천도서. 어린이·청소년 대상 균형 잡힌 독서 목록입니다." },
+  "서울시교육청":    { label: "🏫 서울시교육청",    chipClass: "active",         badgeClass: "badge-edu",       desc: "서울시교육청 교사 추천 도서. 유아~청소년 전 연령 포괄하며 문학·사회·과학 분야가 고루 포함됩니다." },
+  "서울어린이도서관": { label: "🌸 서울어린이도서관", chipClass: "active-pink",    badgeClass: "badge-seoul",     desc: "서울어린이도서관협의회 테마 추천 도서. 이웃·가족 등 생활 주제 중심으로 선정한 그림책·동화가 많습니다." },
+  "국립중앙도서관":  { label: "🏛️ 국립중앙도서관",  chipClass: "active-indigo",  badgeClass: "badge-nlcf",      desc: "국립중앙도서관 사서 추천 우수 문학 도서. 초등 고학년·청소년 대상 문학 작품 중심입니다." },
+  "교과연계도서":    { label: "📝 교과연계도서",    chipClass: "active-brown",   badgeClass: "badge-cur",       desc: "서울시교육청 초등 1~6학년 교과서 연계 도서. 국어·수학·사회·과학 등 교과목별로 분류되어 있습니다." },
 };
 
 // 수상 출처 (뱃지 금/은 구분 적용)
@@ -80,8 +80,16 @@ const AGE_ORDER = ["6-7세", "초등1-2", "초등3-4", "초등5-6", "청소년",
 
 // "어린이" → UI 표시용 레이블
 function ageLabel(age: string): string {
-  return age === "어린이" ? "전체 어린이" : age;
+  return age === "어린이" ? "어린이" : age;
 }
+const AGE_TOOLTIP: Record<string, string> = {
+  "6-7세":   "유아·유치원~초등 저학년 대상 그림책",
+  "초등1-2": "초등학교 1~2학년 대상",
+  "초등3-4": "초등학교 3~4학년 대상",
+  "초등5-6": "초등학교 5~6학년 대상",
+  "청소년":  "중학교~고등학교 청소년 대상",
+  "어린이":  "초등 전 학년 (1~6학년) 대상 · 일부 5~7세 포함",
+};
 
 // 색상 테마
 const COLOR_THEMES: Record<string, {
@@ -197,6 +205,7 @@ export default function Home() {
   const [summaryIsEstimate, setSummaryIsEstimate] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showActivityOnly, setShowActivityOnly] = useState(false);
+  const [showAbout,        setShowAbout]        = useState(false);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
   const [libLoading,     setLibLoading]     = useState(false);
   const [userLocation,   setUserLocation]   = useState<{lat:number;lng:number}|null>(null);
@@ -465,6 +474,27 @@ export default function Home() {
           내 근처 도서관 대출 여부를 바로 확인하세요.
         </p>
 
+        {/* 앱 소개 토글 */}
+        <button className="about-toggle" onClick={() => setShowAbout(v => !v)}>
+          <Info size={13} /> 이 앱에 대해 {showAbout ? "▲" : "▼"}
+        </button>
+        {showAbout && (
+          <div className="about-panel">
+            <div className="about-section">
+              <strong>📖 만든 이유</strong>
+              <p>동화구연봉사자로 활동하며 &ldquo;내 주제에 맞는 책을 빠르게 찾고, 줄거리를 파악해서, 가까운 도서관에서 바로 빌릴 수 있으면 얼마나 좋을까&rdquo;라는 고민에서 출발했습니다. 국제 아동문학상 수상작은 주로 해외 작품이라, 국내 우수 도서를 함께 포괄하기 위해 각 기관의 추천 도서 목록도 함께 구성했습니다.</p>
+            </div>
+            <div className="about-sources">
+              <strong>📚 출처별 특징</strong>
+              <ul>
+                {Object.entries(SOURCE_CONFIG).map(([src, cfg]) => (
+                  <li key={src}><span className="about-src-label">{cfg.label}</span> {cfg.desc}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         <div className="controls-container">
           {/* 검색 모드 탭 */}
           <div className="search-tabs">
@@ -552,8 +582,11 @@ export default function Home() {
                   key={age}
                   className={`chip ${selectedAges.includes(age) ? "active" : ""} ${age === "어린이" ? "chip-age-broad" : ""}`}
                   onClick={() => toggleAge(age)}
-                  title={age === "어린이" ? "출처에서 세분화 없이 제공된 도서 (서울시교육청·국립중앙도서관 등)" : undefined}
-                >{ageLabel(age)}</button>
+                  title={AGE_TOOLTIP[age]}
+                >
+                  {ageLabel(age)}
+                  {age === "어린이" && <span className="chip-age-sub">초등전학년</span>}
+                </button>
               ))}
             </div>
           </div>
@@ -568,6 +601,7 @@ export default function Home() {
                     key={src}
                     className={`chip ${selectedSources.includes(src) ? cfg.chipClass : ""}`}
                     onClick={() => toggleSource(src)}
+                    title={cfg.desc}
                   >{cfg.label}</button>
                 ))}
               </div>
