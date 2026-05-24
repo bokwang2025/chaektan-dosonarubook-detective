@@ -30,6 +30,8 @@ interface LibraryInfo {
 const FORMAT_RULES = [
   { key: "wordless",   emoji: "🔤", label: "글없는그림책",
     patterns: ["글 없이", "글없는", "글자 없", "그림만으로", "말 없이", "글이 없", "무언의 그림책", "글 없는 그림"] },
+  { key: "photo",      emoji: "📷", label: "사진그림책",
+    patterns: ["사진으로 만든", "실제 사진", "포토그래피", "사진 그림책", "사진을 활용"] },
   { key: "collage",    emoji: "✂️", label: "사진·콜라주",
     patterns: ["콜라주", "오려 만든", "거리에서 주운", "실물 재료"] },
   { key: "monochrome", emoji: "⬛", label: "흑백그림",
