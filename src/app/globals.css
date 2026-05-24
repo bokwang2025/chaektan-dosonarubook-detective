@@ -570,3 +570,81 @@ body {
   .ai-btn { width: 100%; justify-content: center; }
   .book-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
 }
+
+/* ── 독서활동 태그 ──────────────────────── */
+.tag-chip-activity {
+  background: #fef3c7; border: 1px solid #fde68a;
+  color: #92400e; padding: .22rem .55rem; border-radius: .4rem;
+  font-size: .7rem; font-weight: 600; cursor: default;
+  font-family: inherit;
+}
+
+/* ── 카드 하단 버튼 2개 ─────────────────── */
+.card-btns {
+  display: flex; gap: .4rem; margin-top: .4rem;
+}
+.detail-btn {
+  display: flex; align-items: center; justify-content: center; gap: .4rem;
+  flex: 1;
+  background: rgba(67,97,238,.06); border: 1.5px solid rgba(67,97,238,.2);
+  color: var(--accent); padding: .6rem .4rem; border-radius: .65rem;
+  cursor: pointer; font-size: .78rem; font-weight: 600;
+  transition: all .2s; font-family: inherit;
+}
+.detail-btn:hover { background: rgba(67,97,238,.12); border-color: var(--accent); }
+.card-btns .library-btn {
+  flex: 1; margin-top: 0; width: auto;
+}
+
+/* ── 상세 모달 ──────────────────────────── */
+.detail-modal {
+  max-width: 680px !important;
+}
+.detail-header {
+  display: flex; gap: 1.4rem; margin-bottom: 1.4rem;
+}
+.detail-cover {
+  width: 120px; flex-shrink: 0;
+}
+.detail-info {
+  flex: 1; display: flex; flex-direction: column; gap: .3rem;
+}
+.detail-award {
+  display: inline-block;
+  background: #fffbeb; border: 1px solid #fde68a;
+  color: #92400e; font-size: .75rem; font-weight: 600;
+  padding: .2rem .6rem; border-radius: .4rem;
+  margin-bottom: .2rem;
+}
+.detail-age {
+  font-size: .8rem; color: var(--text-sub);
+}
+.detail-tags {
+  display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .3rem;
+}
+.detail-section-title {
+  font-size: .85rem; font-weight: 700; color: var(--text);
+  margin-bottom: .5rem;
+}
+.detail-summary-section, .detail-activity-section, .detail-hook-section {
+  background: #f8fafc; border-radius: .8rem;
+  padding: 1rem 1.1rem; margin-bottom: .8rem;
+  border: 1px solid var(--border);
+}
+.detail-activity-section {
+  background: #fffbeb; border-color: #fde68a;
+}
+.detail-hook-section {
+  background: #f0fdf4; border-color: #bbf7d0;
+}
+.detail-summary {
+  font-size: .9rem; color: var(--text); line-height: 1.75;
+  margin: 0;
+}
+.detail-activity {
+  font-size: .88rem; color: #92400e; line-height: 1.65; margin: 0;
+}
+.detail-hook {
+  font-size: .88rem; color: #166534; line-height: 1.65; margin: 0;
+  font-style: italic;
+}

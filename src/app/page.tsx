@@ -159,6 +159,10 @@ export default function Home() {
   const [aiLoading,      setAiLoading]      = useState(false);
   const [aiError,        setAiError]        = useState("");
   const [selectedBook,   setSelectedBook]   = useState<Book | null>(null);
+  const [detailBook,     setDetailBook]     = useState<Book | null>(null);
+  const [summary,        setSummary]        = useState<string>("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [showActivityOnly, setShowActivityOnly] = useState(false);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
   const [libLoading,     setLibLoading]     = useState(false);
   const [userLocation,   setUserLocation]   = useState<{lat:number;lng:number}|null>(null);
@@ -176,7 +180,7 @@ export default function Home() {
   const filterBooks = useCallback(() => {
     if (aiMode) return;
 
-    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly;
+    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly;
 
     // 아무 필터·검색어도 없으면 초기 큐레이션 화면 (출처 다양 + 표지 있는 책)
     if (!hasFilter) {
@@ -188,6 +192,8 @@ export default function Home() {
 
     if (showKoreanOnly)
       filtered = filtered.filter((b) => b.koreanIsbn && b.koreanIsbn.length > 0);
+    if (showActivityOnly)
+      filtered = filtered.filter((b) => b.activity && b.activity.trim().length > 0);
 
     if (query.trim()) {
       const q = query.toLowerCase();
@@ -205,7 +211,7 @@ export default function Home() {
       filtered = filtered.filter((b) => selectedSources.includes(b.source));
 
     setBooks(showAll ? filtered : filtered.slice(0, 60));
-  }, [query, selectedAges, selectedSources, showKoreanOnly, aiMode, showAll]);
+  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -342,6 +348,27 @@ export default function Home() {
   const handleCheckLibrary = (book: Book) => {
     setSelectedBook(book); setLibraries([]);
     fetchLibraries(book, userLocation);
+  };
+
+  // ── 상세페이지 열기 (줄거리 AI 생성) ──────────
+  const openDetail = async (book: Book) => {
+    setDetailBook(book);
+    setSummary("");
+    setSummaryLoading(true);
+    try {
+      const params = new URLSearchParams({
+        title: book.koreanTitle,
+        author: book.author,
+        tags: [...(book.tags || []), ...(book.situationTags || []), ...(book.emotionTags || [])].slice(0, 10).join(", "),
+        hook: book.hook || "",
+        targetAge: book.targetAge || "",
+        awardName: book.awardName || "",
+      });
+      const res = await fetch(`/api/book-summary?${params}`);
+      const data = await res.json();
+      setSummary(data.summary || "");
+    } catch { setSummary(""); }
+    finally { setSummaryLoading(false); }
   };
 
   // ── 모달 내 위치 허용 버튼 ───────────────────
@@ -509,7 +536,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 국내출간 토글 */}
+          {/* 국내출간 + 독서활동 토글 */}
           <div className="filter-row">
             <span className="filter-label">필터</span>
             <div className="filter-chips">
@@ -518,6 +545,12 @@ export default function Home() {
                 onClick={toggleKoreanOnly}
               >
                 🇰🇷 국내 출간
+              </button>
+              <button
+                className={`chip ${showActivityOnly ? "active" : ""}`}
+                onClick={() => setShowActivityOnly(v => !v)}
+              >
+                ✏️ 독서활동 있음
               </button>
             </div>
           </div>
@@ -586,16 +619,18 @@ export default function Home() {
       <section className="book-grid">
         {books.map((book) => (
           <div className="book-card" key={book.id}>
-            <BookCover
-              isbn={book.koreanIsbn || book.isbn}
-              title={book.koreanTitle}
-              source={book.source}
-              originalIsbn={book.isbn !== book.koreanIsbn ? book.isbn : undefined}
-              cachedUrl={
-                CONFIRMED_COVERS[book.koreanIsbn]?.url ||
-                CONFIRMED_COVERS[book.isbn]?.url
-              }
-            />
+            <div style={{ cursor: "pointer" }} onClick={() => openDetail(book)}>
+              <BookCover
+                isbn={book.koreanIsbn || book.isbn}
+                title={book.koreanTitle}
+                source={book.source}
+                originalIsbn={book.isbn !== book.koreanIsbn ? book.isbn : undefined}
+                cachedUrl={
+                  CONFIRMED_COVERS[book.koreanIsbn]?.url ||
+                  CONFIRMED_COVERS[book.isbn]?.url
+                }
+              />
+            </div>
 
             {(() => {
               const isAward = AWARD_SOURCES.has(book.source);
@@ -627,7 +662,7 @@ export default function Home() {
               );
             })()}
 
-            <h3 className="book-title">{book.koreanTitle}</h3>
+            <h3 className="book-title" style={{ cursor: "pointer" }} onClick={() => openDetail(book)}>{book.koreanTitle}</h3>
             {book.originalTitle && book.originalTitle !== book.koreanTitle && (
               <div className="book-original">{book.originalTitle}</div>
             )}
@@ -651,6 +686,9 @@ export default function Home() {
                 {book.targetAge && (
                   <span className="tag-chip tag-chip-age">{book.targetAge}</span>
                 )}
+                {book.activity && book.activity.trim() && (
+                  <span className="tag-chip tag-chip-activity">✏️ 독서활동</span>
+                )}
                 {book.tags.slice(0, 5).map((t, i) => (
                   <button key={i} className="tag-chip" onClick={() => { setQuery(t); resetAi(); }}>
                     #{t}
@@ -659,10 +697,16 @@ export default function Home() {
               </div>
             )}
 
-            <button className="library-btn" onClick={() => handleCheckLibrary(book)}>
-              <Library size={13} />
-              대출 가능 도서관 확인
-            </button>
+            <div className="card-btns">
+              <button className="detail-btn" onClick={() => openDetail(book)}>
+                <BookOpen size={13} />
+                줄거리 보기
+              </button>
+              <button className="library-btn" onClick={() => handleCheckLibrary(book)}>
+                <Library size={13} />
+                도서관 확인
+              </button>
+            </div>
           </div>
         ))}
 
@@ -698,6 +742,81 @@ export default function Home() {
           <button className="show-more-btn" onClick={() => setShowAll(true)}>
             <ChevronDown size={16} /> 전체 {totalFiltered.toLocaleString()}권 보기
           </button>
+        </div>
+      )}
+
+      {/* 상세 모달 (줄거리) */}
+      {detailBook && (
+        <div className="modal-overlay" onClick={() => setDetailBook(null)}>
+          <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setDetailBook(null)}>
+              <X size={18} />
+            </button>
+            <div className="detail-header">
+              <div className="detail-cover">
+                <BookCover
+                  isbn={detailBook.koreanIsbn || detailBook.isbn}
+                  title={detailBook.koreanTitle}
+                  source={detailBook.source}
+                  originalIsbn={detailBook.isbn !== detailBook.koreanIsbn ? detailBook.isbn : undefined}
+                  cachedUrl={
+                    CONFIRMED_COVERS[detailBook.koreanIsbn]?.url ||
+                    CONFIRMED_COVERS[detailBook.isbn]?.url
+                  }
+                />
+              </div>
+              <div className="detail-info">
+                <h2 className="modal-title">{detailBook.koreanTitle}</h2>
+                {detailBook.originalTitle && detailBook.originalTitle !== detailBook.koreanTitle && (
+                  <div style={{ fontSize: ".82rem", color: "#64748b", marginBottom: ".4rem" }}>{detailBook.originalTitle}</div>
+                )}
+                <p className="modal-sub">{detailBook.author}</p>
+                {detailBook.awardName && (
+                  <div className="detail-award">{detailBook.sourceLabel} {detailBook.awardYear && `(${detailBook.awardYear})`}</div>
+                )}
+                {detailBook.targetAge && (
+                  <div className="detail-age">대상 연령: {detailBook.targetAge}</div>
+                )}
+                <div className="detail-tags">
+                  {detailBook.tags.slice(0, 8).map((t, i) => (
+                    <span key={i} className="tag-chip">#{t}</span>
+                  ))}
+                </div>
+                <button className="library-btn" style={{ marginTop: ".8rem" }} onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
+                  <Library size={13} />
+                  대출 가능 도서관 확인
+                </button>
+              </div>
+            </div>
+
+            <div className="detail-summary-section">
+              <div className="detail-section-title">📖 줄거리</div>
+              {summaryLoading ? (
+                <div className="lib-loading">
+                  <Loader2 size={18} className="spin" />
+                  <span>AI가 줄거리를 요약하고 있어요…</span>
+                </div>
+              ) : summary ? (
+                <p className="detail-summary">{summary}</p>
+              ) : (
+                <p className="detail-summary" style={{ color: "#94a3b8" }}>줄거리 정보를 불러오지 못했어요.</p>
+              )}
+            </div>
+
+            {detailBook.activity && detailBook.activity.trim() && (
+              <div className="detail-activity-section">
+                <div className="detail-section-title">✏️ 독서 후 활동</div>
+                <p className="detail-activity">{detailBook.activity}</p>
+              </div>
+            )}
+
+            {detailBook.hook && (
+              <div className="detail-hook-section">
+                <div className="detail-section-title">💬 한줄 소개</div>
+                <p className="detail-hook">{detailBook.hook}</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
