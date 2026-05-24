@@ -611,6 +611,15 @@ body {
   font-family: inherit;
 }
 
+/* ── 책 형태 배지 ────────────────────────── */
+.tag-chip-format {
+  background: #f3f0ff; border: 1px solid #c4b5fd;
+  color: #5b21b6; padding: .22rem .55rem; border-radius: .4rem;
+  font-size: .68rem; font-weight: 700; cursor: default;
+  font-family: inherit; letter-spacing: -.01em;
+  white-space: nowrap;
+}
+
 /* ── 카드 하단 버튼 2개 ─────────────────── */
 .card-btns {
   display: flex; gap: .4rem; margin-top: .4rem;

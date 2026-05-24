@@ -26,6 +26,29 @@ interface LibraryInfo {
   loanAvailable: boolean; distance?: number;
 }
 
+// ─── 책 형태 배지 ─────────────────────────────
+const FORMAT_RULES = [
+  { key: "wordless",   emoji: "🔤", label: "글없는그림책",
+    patterns: ["글 없이", "글없는", "글자 없", "그림만으로", "말 없이", "글이 없"] },
+  { key: "collage",    emoji: "✂️", label: "사진·콜라주",
+    patterns: ["콜라주", "오려 만든", "거리에서 주운", "실물 재료"] },
+  { key: "monochrome", emoji: "⬛", label: "흑백그림",
+    patterns: ["흑백 그림", "흑백의", "흑백으로", "검정과 흰"] },
+  { key: "vertical",   emoji: "📐", label: "세로판형",
+    patterns: ["길쭉한 그림", "옆으로 돌려", "세로로 읽", "세로 방향"] },
+  { key: "panorama",   emoji: "📜", label: "병풍·파노라마",
+    patterns: ["병풍", "펼치면 이어지", "컷아웃을 통해", "아코디언"] },
+  { key: "clay",       emoji: "🫙", label: "점토·입체",
+    patterns: ["점토", "클레이", "조각으로 만든"] },
+  { key: "woodcut",    emoji: "🎨", label: "판화",
+    patterns: ["판화", "목판화", "스크래치보드"] },
+];
+
+function getBookFormats(book: Book) {
+  const text = [book.notice, book.hook, book.activity].filter(Boolean).join(" ");
+  return FORMAT_RULES.filter(rule => rule.patterns.some(p => text.includes(p)));
+}
+
 // ─── 상수 ────────────────────────────────────
 const allBooks = booksData as Book[];
 
@@ -723,6 +746,11 @@ export default function Home() {
                 {book.activity && book.activity.trim() && (
                   <span className="tag-chip tag-chip-activity">✏️ 독서활동</span>
                 )}
+                {getBookFormats(book).map(fmt => (
+                  <span key={fmt.key} className="tag-chip tag-chip-format" title={fmt.label}>
+                    {fmt.emoji} {fmt.label}
+                  </span>
+                ))}
                 {book.tags.slice(0, 5).map((t, i) => (
                   <button key={i} className="tag-chip" onClick={() => { setQuery(t); resetAi(); }}>
                     #{t}
