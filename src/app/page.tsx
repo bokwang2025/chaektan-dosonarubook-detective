@@ -365,11 +365,9 @@ export default function Home() {
       const params = new URLSearchParams({
         title:        book.koreanTitle,
         author:       book.author,
+        isbn:         book.koreanIsbn   || book.isbn || "",
+        origIsbn:     book.isbn         || "",
         hook:         book.hook         || "",
-        notice:       book.notice       || "",
-        situationTags:(book.situationTags || []).join(", "),
-        emotionTags:  (book.emotionTags   || []).join(", "),
-        topicTags:    (book.topicTags     || []).join(", "),
         tags:         (book.tags || []).slice(0, 8).join(", "),
         targetAge:    book.targetAge    || "",
         awardName:    book.awardName    || "",
