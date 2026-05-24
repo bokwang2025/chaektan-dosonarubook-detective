@@ -192,6 +192,7 @@ export default function Home() {
   const [selectedBook,   setSelectedBook]   = useState<Book | null>(null);
   const [detailBook,     setDetailBook]     = useState<Book | null>(null);
   const [summary,        setSummary]        = useState<string>("");
+  const [summaryIsEstimate, setSummaryIsEstimate] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showActivityOnly, setShowActivityOnly] = useState(false);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
@@ -385,6 +386,7 @@ export default function Home() {
   const openDetail = async (book: Book) => {
     setDetailBook(book);
     setSummary("");
+    setSummaryIsEstimate(false);
     setSummaryLoading(true);
     try {
       const params = new URLSearchParams({
@@ -402,6 +404,7 @@ export default function Home() {
       const res = await fetch(`/api/book-summary?${params}`);
       const data = await res.json();
       setSummary(data.summary || "");
+      setSummaryIsEstimate(data.isEstimate === true);
     } catch { setSummary(""); }
     finally { setSummaryLoading(false); }
   };
@@ -867,7 +870,16 @@ export default function Home() {
                   <span>AI가 줄거리를 요약하고 있어요…</span>
                 </div>
               ) : summary ? (
-                <p className="detail-summary">{summary}</p>
+                <>
+                  {summaryIsEstimate && (
+                    <p style={{ fontSize: ".72rem", color: "#f59e0b", marginBottom: ".5rem",
+                      background: "#fffbeb", border: "1px solid #fde68a", borderRadius: ".4rem",
+                      padding: ".3rem .6rem", display: "inline-block" }}>
+                      ⚠️ 국내 미출간 원서로 AI가 추정한 줄거리입니다. 실제 내용과 다를 수 있어요.
+                    </p>
+                  )}
+                  <p className="detail-summary">{summary}</p>
+                </>
               ) : (
                 <p className="detail-summary" style={{ color: "#94a3b8" }}>줄거리 정보를 불러오지 못했어요.</p>
               )}

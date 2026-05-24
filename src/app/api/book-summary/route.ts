@@ -18,14 +18,24 @@ async function fetchKakaoContents(isbn: string): Promise<string | null> {
   } catch { return null; }
 }
 
+// ISBN이 해외 원서인지 판별
+function isForeignIsbn(isbn: string): boolean {
+  if (!isbn) return false;
+  return !isbn.startsWith("9788") && !isbn.startsWith("9791");
+}
+
 // Claude — 카카오 내용을 바탕으로 완성된 줄거리 생성
 async function summarizeWithClaude(params: {
   title: string; author: string; awardName: string; targetAge: string;
   tags: string; hook: string; notice: string; kakaoContents: string | null;
-}): Promise<string | null> {
+  isForeign: boolean;
+}): Promise<{ text: string; isEstimate: boolean } | null> {
   try {
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const hasRealContent = !!(params.kakaoContents || params.notice);
+    const isEstimate = params.isForeign && !hasRealContent;
 
     const contextLines: string[] = [];
     if (params.kakaoContents) {
@@ -35,7 +45,12 @@ async function summarizeWithClaude(params: {
     if (params.hook) contextLines.push(`[줄거리 힌트 — 가장 중요, 이 내용을 중심으로 줄거리를 써줘] ${params.hook}`);
     if (params.tags) contextLines.push(`[주제 태그] ${params.tags}`);
 
-    const prompt = `다음 정보를 바탕으로 책의 줄거리를 3문장으로 요약해줘.
+    // 해외 원서이고 실제 내용이 없으면 경고 추가
+    const estimateNote = isEstimate
+      ? "\n주의: 출판사 소개글이 없어 제목·수상정보·태그만으로 추정하는 내용입니다. 첫 문장을 반드시 '※ 원서 정보가 제한적이어서 AI가 추정한 내용입니다.'로 시작하세요."
+      : "";
+
+    const prompt = `다음 정보를 바탕으로 책의 줄거리를 3문장으로 요약해줘.${estimateNote}
 
 규칙:
 - 소개글이 잘려 있어도 제목·저자·수상정보·태그를 활용해 반드시 줄거리를 완성해줘
@@ -57,8 +72,8 @@ ${contextLines.join("\n")}`;
       messages: [{ role: "user", content: prompt }],
     });
 
-    const summary = (message.content[0] as { text: string }).text.trim();
-    return summary || null;
+    const text = (message.content[0] as { text: string }).text.trim();
+    return text ? { text, isEstimate } : null;
   } catch {
     return null;
   }
@@ -82,12 +97,21 @@ export async function GET(req: NextRequest) {
   let kakaoContents = await fetchKakaoContents(isbn);
   if (!kakaoContents && origIsbn) kakaoContents = await fetchKakaoContents(origIsbn);
 
-  // 2. Claude로 완성된 줄거리 생성 (카카오 내용 있으면 그걸 바탕으로, 없으면 메타데이터로)
-  const summary = await summarizeWithClaude({
-    title, author, awardName, targetAge, tags, hook, notice, kakaoContents,
+  // 해외 원서 여부
+  const isForeign = isForeignIsbn(isbn) && isForeignIsbn(origIsbn);
+
+  // 2. Claude로 완성된 줄거리 생성
+  const result = await summarizeWithClaude({
+    title, author, awardName, targetAge, tags, hook, notice, kakaoContents, isForeign,
   });
 
-  if (summary) return NextResponse.json({ summary, source: kakaoContents ? "kakao+claude" : "claude" });
+  if (result) {
+    return NextResponse.json({
+      summary: result.text,
+      isEstimate: result.isEstimate,
+      source: kakaoContents ? "kakao+claude" : "claude",
+    });
+  }
 
   // 3. Claude 크레딧 없을 때 — 카카오 내용 그대로 (불완전해도)
   if (kakaoContents) {
