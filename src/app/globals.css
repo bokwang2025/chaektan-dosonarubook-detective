@@ -332,10 +332,12 @@ body {
 
 /* 출처 배지 */
 .source-badge {
-  display: inline-flex; align-items: center; gap: .35rem;
-  padding: .28rem .7rem; border-radius: 2rem;
+  display: inline-flex; align-items: center; gap: .25rem;
+  flex-wrap: wrap; justify-content: center;
+  padding: .3rem .75rem; border-radius: 2rem;
   font-size: .7rem; font-weight: 700; align-self: flex-start;
-  letter-spacing: .02em;
+  letter-spacing: .02em; text-align: center; line-height: 1.45;
+  max-width: 100%;
 }
 /* 추가 출처 배지 (작은 크기) */
 .source-badge-sm {
@@ -376,9 +378,10 @@ body {
   font-size: .72rem; font-weight: 600;
 }
 .award-year-inline {
-  opacity: 0.75;
-  font-size: .72rem;
-  margin-left: .2rem;
+  opacity: 0.8;
+  font-size: .7rem;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .ai-reason {
