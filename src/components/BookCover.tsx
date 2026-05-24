@@ -29,6 +29,23 @@ function openLibraryUrl(isbn: string) {
   return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
 }
 
+// ISBN-13 → ISBN-10 변환
+function isbn13to10(isbn13: string): string | null {
+  if (isbn13.length !== 13 || !isbn13.startsWith("97")) return null;
+  const body = isbn13.slice(3, 12);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += (10 - i) * parseInt(body[i]);
+  const check = (11 - (sum % 11)) % 11;
+  return body + (check === 10 ? "X" : check.toString());
+}
+
+// Amazon 이미지 CDN (ISBN-10 = ASIN for books)
+function amazonCoverUrl(isbn13: string): string | null {
+  const isbn10 = isbn13to10(isbn13);
+  if (!isbn10) return null;
+  return `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01.LZZZZZZZ.jpg`;
+}
+
 async function fetchKakaoUrl(isbn: string): Promise<string | null> {
   try {
     const res = await fetch(`/api/book-cover?isbn=${isbn}`);
@@ -81,9 +98,12 @@ export default function BookCover({ isbn, title, source: _source, cachedUrl, ori
         if (!cancelled && google) { setSrc(google); setStep(1); return; }
         if (!cancelled) setFailed(true);
       } else {
-        // 해외책: cachedUrl → Open Library → Google Books
-        const url = cachedUrl || openLibraryUrl(isbn);
-        if (!cancelled) { setSrc(url); }
+        // 해외책: cachedUrl → Amazon CDN → Open Library → Google Books
+        if (cachedUrl) { if (!cancelled) { setSrc(cachedUrl); } return; }
+        const amazon = amazonCoverUrl(isbn);
+        if (amazon && !cancelled) { setSrc(amazon); return; }
+        const ol = openLibraryUrl(isbn);
+        if (!cancelled) { setSrc(ol); }
       }
     }
 
@@ -106,9 +126,14 @@ export default function BookCover({ isbn, title, source: _source, cachedUrl, ori
         setFailed(true);
       }
     } else {
+      // Amazon CDN 실패 → Open Library → Google Books
       if (step === 0) {
+        const ol = openLibraryUrl(isbn);
+        if (ol !== src) { setSrc(ol); setStep(1); return; }
+        setFailed(true);
+      } else if (step === 1) {
         const g = await fetchGoogleCover(isbn);
-        if (g) { setSrc(g); setStep(1); }
+        if (g) { setSrc(g); setStep(2); }
         else setFailed(true);
       } else {
         setFailed(true);
