@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { smartSearch } from "@/lib/smartSearch";
+import { smartSearch, rankByRelevance } from "@/lib/smartSearch";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
         const Anthropic = (await import("@anthropic-ai/sdk")).default;
         const client = new Anthropic({ apiKey });
 
-        const booksSlice = books.slice(0, 200);
+        // 관련도 순 사전 정렬 → 상위 300권만 Claude에 전달
+        const ranked = rankByRelevance(query, books);
+        const booksSlice = ranked.slice(0, 300);
         const prompt = `당신은 어린이 도서 추천 전문가입니다.
 아래는 도서 목록(JSON)입니다. 각 도서에는 tags(주제/감정/상황 태그)와 hook(추천 상황 설명)이 있습니다.
 
