@@ -497,27 +497,27 @@ export default function Home() {
         } catch { return []; }
       };
 
-      // 지역 결정 및 검색
+      // 지역 결정 및 검색 — pageSize=200으로 가나다 순 편향 해소
       let rawLibs: RawLib[] = [];
       if (loc) {
         const region = regionFromCoords(loc.lat, loc.lng);
-        rawLibs = await fetchLibs(region, 30);
+        rawLibs = await fetchLibs(region, 200);
         if (rawLibs.length < 3) {
           const extras = await Promise.all(
-            ["11", "31"].filter(r => r !== region).map(r => fetchLibs(r, 10))
+            ["11", "31"].filter(r => r !== region).map(r => fetchLibs(r, 50))
           );
           rawLibs = [...rawLibs, ...extras.flat()];
         }
       } else {
-        const [a, b] = await Promise.all([fetchLibs("11", 10), fetchLibs("31", 10)]);
+        const [a, b] = await Promise.all([fetchLibs("11", 30), fetchLibs("31", 20)]);
         rawLibs = [...a, ...b];
         if (!rawLibs.length) {
-          const extras = await Promise.all(["21","22","23","24","25","26"].map(r => fetchLibs(r, 5)));
+          const extras = await Promise.all(["21","22","23","24","25","26"].map(r => fetchLibs(r, 10)));
           rawLibs = extras.flat();
         }
       }
 
-      // 중복 제거 → 거리 계산 → 상위 5개
+      // 중복 제거 → 거리 계산 → 거리순 정렬 → 상위 5개
       const seen = new Set<string>();
       const uniq = rawLibs.filter(({ lib }) => { if (seen.has(lib.libCode)) return false; seen.add(lib.libCode); return true; });
       const withDist = uniq.map(({ lib }) => ({
