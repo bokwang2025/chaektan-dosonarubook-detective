@@ -290,8 +290,8 @@ export default function Home() {
       );
 
     // ── 다중 정렬 적용 (선택 순서 = 우선순위) ──
+    const counts = libraryCounts as Record<string, number>;
     if (sortModes.length > 0) {
-      const counts = libraryCounts as Record<string, number>;
       filtered = [...filtered].sort((a, b) => {
         for (const mode of sortModes) {
           let diff = 0;
@@ -313,6 +313,13 @@ export default function Home() {
           if (diff !== 0) return diff;
         }
         return 0;
+      });
+    } else if (query.trim()) {
+      // 검색어만 있고 별도 정렬 없으면 도서관 보유 수 많은 순 기본 정렬
+      filtered = [...filtered].sort((a, b) => {
+        const ca = counts[a.koreanIsbn] ?? (a.koreanIsbn ? 0 : -1);
+        const cb = counts[b.koreanIsbn] ?? (b.koreanIsbn ? 0 : -1);
+        return cb - ca;
       });
     }
 
