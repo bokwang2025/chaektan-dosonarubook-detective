@@ -239,7 +239,7 @@ export default function Home() {
   const filterBooks = useCallback(() => {
     if (aiMode) return;
 
-    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly;
+    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || activeTags.length > 0 || sortModes.length > 0;
 
     // 아무 필터·검색어도 없으면 초기 큐레이션 화면 (출처 다양 + 표지 있는 책)
     if (!hasFilter) {
