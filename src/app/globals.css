@@ -730,7 +730,7 @@ body {
 .about-toggle:hover { background: var(--surface2); color: var(--text); }
 .about-panel {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 1rem; padding: 1rem 1.2rem; margin-top: .5rem;
+  border-radius: 1rem; padding: 1rem 1.2rem; margin: .5rem auto 0;
   text-align: left; max-width: 680px; width: 100%;
   box-shadow: 0 2px 12px rgba(0,0,0,.06);
 }
