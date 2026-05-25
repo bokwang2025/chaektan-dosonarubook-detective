@@ -1,13 +1,21 @@
 /**
  * 작은도서관 소장 여부 검색 API
  * - knu.nl.go.kr (작은도서관 정보누리) 에서 ISBN으로 소장 여부 확인
- * - Kakao 좌표→행정동, 주소→좌표 API로 거리 계산
+ * - Nominatim 사전 지오코딩 데이터(small_lib_coords.json)로 거리 계산
+ * - Kakao 좌표→행정동 API로 사용자 위치(구) 파악
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import coordsData from "@/data/small_lib_coords.json";
 
 const KNU_BASE = "https://knu.nl.go.kr";
 const KAKAO_KEY = process.env.KAKAO_REST_API_KEY;
+
+// 사전 지오코딩된 좌표 데이터
+const SMALL_LIB_COORDS = coordsData as Record<
+  string,
+  { libName: string; address: string; lat: number | null; lng: number | null; gu?: string }
+>;
 
 // 서울 구 코드 매핑 (knu CITY_CODE 기준)
 const SEOUL_GU_CODE: Record<string, string> = {
@@ -120,7 +128,7 @@ export async function GET(req: NextRequest) {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
-            pageno: "1", display: "50",
+            pageno: "1", display: "100",
             code: areaCode, city_code: cityCode,
             keyword: "", bookium_yn: "all",
           }).toString(),
@@ -153,11 +161,19 @@ export async function GET(req: NextRequest) {
 
     if (!libs.length) return NextResponse.json({ libraries: [] });
 
-    // ── 3. 각 도서관 소장 여부 + 주소→좌표 병렬 확인 (최대 30개) ──
+    // ── 3. 사전 지오코딩 좌표로 거리 계산 (런타임 API 불필요) ────────
+    const getDistance = (manageCode: string): number | undefined => {
+      const entry = SMALL_LIB_COORDS[manageCode];
+      if (entry?.lat != null && entry?.lng != null) {
+        return haversine(lat, lng, entry.lat, entry.lng);
+      }
+      return undefined;
+    };
+
+    // ── 4. 각 도서관 소장 여부 병렬 확인 (최대 40개) ─────────────────
     const checkResults = await Promise.all(
-      libs.slice(0, 30).map(async (lib) => {
+      libs.slice(0, 40).map(async (lib) => {
         try {
-          // 3-a. ISBN 소장 여부 확인
           const searchRes = await fetch(`${KNU_BASE}/getSearchResult/detail`, {
             method: "POST",
             headers: {
@@ -193,26 +209,11 @@ export async function GET(req: NextRequest) {
           const firstBook = searchData?.SEARCH_RESULT?.SEARCH_LIST?.[0] ?? {};
           const loanAvailable = firstBook?.LOAN_CODE === "OK";
 
-          // 3-b. Kakao 주소→좌표 (거리 계산용)
-          let distance: number | undefined;
-          const rawAddr = lib.LIB_ADDRESS?.trim() ?? "";
-          if (KAKAO_KEY && rawAddr) {
-            try {
-              const geoRes = await fetch(
-                `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(rawAddr)}`,
-                { headers: { Authorization: `KakaoAK ${KAKAO_KEY}` } }
-              );
-              const geoData = await geoRes.json();
-              const doc = geoData.documents?.[0];
-              if (doc) {
-                distance = haversine(lat, lng, parseFloat(doc.y), parseFloat(doc.x));
-              }
-            } catch { /* 거리 미표시 */ }
-          }
+          const distance = getDistance(lib.MANAGE_CODE);
 
           return {
             libName: lib.LIB_NAME,
-            address: rawAddr,
+            address: lib.LIB_ADDRESS?.trim() ?? "",
             manageCode: lib.MANAGE_CODE,
             homepage: lib.LIB_URL ?? null,
             bookSearchUrl: `${KNU_BASE}/${lib.MANAGE_CODE}`,
@@ -226,6 +227,7 @@ export async function GET(req: NextRequest) {
       })
     );
 
+    // 거리순 정렬 (좌표 없는 도서관은 뒤로)
     const found = checkResults
       .filter((r): r is NonNullable<typeof r> => r !== null)
       .sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
