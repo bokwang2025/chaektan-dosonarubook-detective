@@ -1277,6 +1277,9 @@ export default function Home() {
                   📚 근처 작은도서관
                   <span className="small-lib-note">작은도서관 정보누리 기준</span>
                 </div>
+                <div className="small-lib-disclaimer">
+                  ⚠️ 작은도서관은 소장 도서 일부만 knu에 등록되어 있어, 실제로 소장하고 있어도 검색 결과에 나타나지 않을 수 있어요. 미표시 시 도서관에 직접 문의해보세요.
+                </div>
                 {smallLibLoading && (
                   <div className="lib-loading">
                     <Loader2 size={18} className="spin" />
