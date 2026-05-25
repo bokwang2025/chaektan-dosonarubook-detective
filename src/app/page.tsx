@@ -679,11 +679,8 @@ export default function Home() {
                   key={src}
                   className={`chip ${selectedSources.includes(src) ? cfg.chipClass : ""}`}
                   onClick={() => toggleSource(src)}
-                  title={
-                    AWARD_SOURCES.has(src)
-                      ? `최근 20년(2006~2026년) 수상작 기준\n${cfg.desc}`
-                      : cfg.desc
-                  }
+                  data-tooltip={AWARD_SOURCES.has(src) ? "최근 20년(2006~2026년) 수상작 기준" : undefined}
+                  title={AWARD_SOURCES.has(src) ? undefined : cfg.desc}
                 >{cfg.label}</button>
               ))}
             </div>

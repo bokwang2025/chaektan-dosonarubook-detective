@@ -775,6 +775,48 @@ body {
   font-size: .7rem; color: var(--text-sub);
 }
 
+/* ── 커스텀 툴팁 (수상 컬렉션 칩) ────────── */
+[data-tooltip] { position: relative; }
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + .55rem);
+  left: 50%;
+  transform: translateX(-50%) scale(.95);
+  opacity: 0;
+  pointer-events: none;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: .28rem .65rem;
+  border-radius: .45rem;
+  font-size: .72rem;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 300;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  transition: opacity .15s ease, transform .15s ease;
+  letter-spacing: 0;
+}
+[data-tooltip]::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + .1rem);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1e293b;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 300;
+  transition: opacity .15s ease;
+}
+[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+[data-tooltip]:hover::before { opacity: 1; }
+
 /* ── 정렬 행 ─────────────────────────────── */
 .sort-row {
   padding-top: .15rem;
