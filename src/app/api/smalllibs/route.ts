@@ -89,36 +89,60 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // ── 1. Kakao 역지오코딩 → 시도/구 이름 ──────────────────────────
+    // ── 1. 역지오코딩 → 시도/구 이름 (Kakao → Nominatim fallback) ──
     let areaCode = "11"; // 기본 서울
     let guName = "";
     const cityCodes: string[] = []; // 검색할 구 코드 목록
 
-    if (KAKAO_KEY) {
+    /** Kakao 역지오코딩 시도 */
+    const tryKakao = async (): Promise<{ sido: string; gu: string } | null> => {
+      if (!KAKAO_KEY) return null;
       try {
-        const kakaoRes = await fetch(
+        const res = await fetch(
           `https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x=${lng}&y=${lat}`,
           { headers: { Authorization: `KakaoAK ${KAKAO_KEY}` } }
         );
-        const kakaoData = await kakaoRes.json();
-        const region = (kakaoData.documents ?? []).find(
+        const data = await res.json();
+        if (data.errorType) return null; // API 비활성화 등 오류
+        const region = (data.documents ?? []).find(
           (d: { region_type: string }) => d.region_type === "H"
         ) as { region_1depth_name: string; region_2depth_name: string } | undefined;
+        if (!region) return null;
+        return { sido: region.region_1depth_name, gu: region.region_2depth_name };
+      } catch { return null; }
+    };
 
-        if (region) {
-          const sido = region.region_1depth_name;
-          guName = region.region_2depth_name;
-          areaCode = AREA_CODE[sido] ?? "11";
-          if (sido.includes("서울") && SEOUL_GU_CODE[guName]) {
-            // 현재 구 + 인접 구 코드 수집
-            cityCodes.push(SEOUL_GU_CODE[guName]);
-            const adjacent = SEOUL_GU_ADJACENT[guName] ?? [];
-            for (const adj of adjacent) {
-              if (SEOUL_GU_CODE[adj]) cityCodes.push(SEOUL_GU_CODE[adj]);
-            }
-          }
+    /** Nominatim 역지오코딩 fallback */
+    const tryNominatim = async (): Promise<{ sido: string; gu: string } | null> => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ko&zoom=10`,
+          { headers: { "User-Agent": "BookDetective/1.0 (https://bookdetective-dosunaru.vercel.app)" } }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        const addr = data?.address ?? {};
+        // Nominatim 응답에서 시/도 및 구/군 추출
+        const sido = addr.city || addr.province || addr.state || "";
+        const gu = addr.borough || addr.district || addr.suburb || "";
+        if (!sido || !gu) return null;
+        return { sido, gu };
+      } catch { return null; }
+    };
+
+    const geoResult = await tryKakao() ?? await tryNominatim();
+
+    if (geoResult) {
+      const { sido, gu } = geoResult;
+      guName = gu;
+      areaCode = AREA_CODE[sido] ?? "11";
+      if (sido.includes("서울") && SEOUL_GU_CODE[guName]) {
+        cityCodes.push(SEOUL_GU_CODE[guName]);
+        const adjacent = SEOUL_GU_ADJACENT[guName] ?? [];
+        for (const adj of adjacent) {
+          if (SEOUL_GU_CODE[adj]) cityCodes.push(SEOUL_GU_CODE[adj]);
         }
-      } catch { /* 역지오코딩 실패시 전체 검색 */ }
+      }
     }
 
     // ── 2. knu 현재 구 + 인접 구 작은도서관 목록 병렬 조회 ──────────
