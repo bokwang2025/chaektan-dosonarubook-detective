@@ -1155,6 +1155,11 @@ export default function Home() {
                   </div>
                 )}
                 <div className="detail-tags">
+                  {getBookFormats(detailBook).map(fmt => (
+                    <span key={fmt.key} className="tag-chip tag-chip-format" title={fmt.label}>
+                      {fmt.emoji} {fmt.label}
+                    </span>
+                  ))}
                   {detailBook.tags.slice(0, 8).map((t, i) => (
                     <span key={i} className="tag-chip">#{t}</span>
                   ))}
