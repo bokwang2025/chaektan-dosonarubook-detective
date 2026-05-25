@@ -174,8 +174,19 @@ export async function GET(req: NextRequest) {
 
     const results = checked.filter(Boolean);
 
+    // bookExist API가 전부 실패한 경우 libSrchByBook 결과를 그대로 반환 (fallback)
     if (!results.length) {
-      return NextResponse.json({ libraries: [], message: "소장 도서관 없음" });
+      const fallback = top5.map(lib => ({
+        libCode:       lib.libCode,
+        libName:       lib.libName,
+        address:       lib.address,
+        tel:           lib.tel,
+        homepage:      lib.homepage,
+        bookSearchUrl: lib.homepage ? buildBookSearchUrl(lib.homepage, isbn) : null,
+        distance:      lib.distance,
+        loanAvailable: false,
+      }));
+      return NextResponse.json({ libraries: fallback });
     }
 
     return NextResponse.json({ libraries: results });

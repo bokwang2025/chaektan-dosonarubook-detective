@@ -283,12 +283,14 @@ export default function Home() {
         for (const mode of sortModes) {
           let diff = 0;
           if (mode === "recent") {
-            const ya = parseInt(a.publishedYear || a.awardYear || "0");
-            const yb = parseInt(b.publishedYear || b.awardYear || "0");
+            // publishedYear가 비어있으면 0으로 처리 (awardYear로 대체하지 않음)
+            const ya = a.publishedYear ? parseInt(a.publishedYear) : 0;
+            const yb = b.publishedYear ? parseInt(b.publishedYear) : 0;
             diff = yb - ya;
           } else if (mode === "multi") {
-            const sa = (a.additionalSources?.length ?? 0) + (a.awardCategory === "Winner" ? 1 : 0);
-            const sb = (b.additionalSources?.length ?? 0) + (b.awardCategory === "Winner" ? 1 : 0);
+            // additionalSources 수만 기준 (awardCategory Winner 보너스 제거)
+            const sa = (a.additionalSources?.length ?? 0);
+            const sb = (b.additionalSources?.length ?? 0);
             diff = sb - sa;
           } else if (mode === "library") {
             const ca = counts[a.koreanIsbn] ?? (a.koreanIsbn ? 0 : -1);
