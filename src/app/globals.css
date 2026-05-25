@@ -775,6 +775,12 @@ body {
   font-size: .7rem; color: var(--text-sub);
 }
 
+/* ── 정렬 행 ─────────────────────────────── */
+.sort-row {
+  padding-top: .15rem;
+  border-top: 1px solid var(--border);
+}
+
 /* ── 태그 중복검색 UI ───────────────────── */
 .active-tags-row {
   display: flex; align-items: center; flex-wrap: wrap; gap: .3rem;

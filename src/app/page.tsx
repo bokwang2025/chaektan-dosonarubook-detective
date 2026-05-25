@@ -216,6 +216,7 @@ export default function Home() {
   const [locationLabel,  setLocationLabel]  = useState("내 위치로 도서관 찾기");
   const [locationError,  setLocationError]  = useState("");
   const [showAll,        setShowAll]        = useState(false);
+  const [sortMode,       setSortMode]       = useState<"none"|"recent"|"multi"|"library">("none");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const relatedTags = useMemo(() => {
@@ -274,8 +275,29 @@ export default function Home() {
         )
       );
 
+    // ── 정렬 적용 ──────────────────────────
+    if (sortMode === "recent") {
+      filtered = [...filtered].sort((a, b) => {
+        const ya = parseInt(a.publishedYear || a.awardYear || "0");
+        const yb = parseInt(b.publishedYear || b.awardYear || "0");
+        return yb - ya;
+      });
+    } else if (sortMode === "multi") {
+      filtered = [...filtered].sort((a, b) => {
+        const sa = (a.additionalSources?.length ?? 0) + (a.awardCategory === "Winner" ? 1 : 0);
+        const sb = (b.additionalSources?.length ?? 0) + (b.awardCategory === "Winner" ? 1 : 0);
+        return sb - sa;
+      });
+    } else if (sortMode === "library") {
+      filtered = [...filtered].sort((a, b) => {
+        const ha = a.koreanIsbn ? 1 : 0;
+        const hb = b.koreanIsbn ? 1 : 0;
+        return hb - ha;
+      });
+    }
+
     setBooks(showAll ? filtered : filtered.slice(0, 60));
-  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, activeTags]);
+  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, activeTags, sortMode]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -350,6 +372,7 @@ export default function Home() {
     setSearchMode(mode);
     setQuery("");
     setActiveTags([]);
+    setSortMode("none");
     setAiMode(false);
     setAiEngine("");
     setAiError("");
@@ -653,7 +676,7 @@ export default function Home() {
                   onClick={() => toggleSource(src)}
                   title={
                     AWARD_SOURCES.has(src)
-                      ? `${cfg.desc}\n※ 최근 20년(2006~2026년) 수상작 기준`
+                      ? `최근 20년(2006~2026년) 수상작 기준\n${cfg.desc}`
                       : cfg.desc
                   }
                 >{cfg.label}</button>
@@ -695,6 +718,30 @@ export default function Home() {
               >
                 ✏️ 독서활동 있음
               </button>
+            </div>
+          </div>
+
+          {/* 정렬 */}
+          <div className="filter-row sort-row">
+            <span className="filter-label">정렬</span>
+            <div className="filter-chips">
+              {(
+                [
+                  { key: "none",    label: "기본",             title: "수집 순서 그대로 표시" },
+                  { key: "recent",  label: "📅 최신 출간",     title: "출판연도 기준 최신순으로 정렬" },
+                  { key: "multi",   label: "🏆 다수 수상·추천", title: "여러 기관에서 중복 수상·추천된 책 우선" },
+                  { key: "library", label: "📚 도서관 보유",    title: "국내 출간 ISBN이 있는 책 우선 (도서관에서 찾기 쉬운 책)" },
+                ] as const
+              ).map(({ key, label, title }) => (
+                <button
+                  key={key}
+                  className={`chip ${sortMode === key ? "active" : ""}`}
+                  onClick={() => { setSortMode(key); setAiMode(false); }}
+                  title={title}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
