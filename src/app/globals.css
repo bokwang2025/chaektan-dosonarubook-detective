@@ -749,3 +749,28 @@ body {
   transition: opacity .2s;
 }
 .ai-clear-filter-btn:hover { opacity: .85; }
+
+/* ── 앱 태그라인 ────────────────────────── */
+.app-tagline {
+  font-size: .74rem; font-weight: 600; letter-spacing: .04em;
+  color: var(--accent); opacity: .85; margin: -.2rem 0 .3rem;
+  text-transform: uppercase;
+}
+
+/* ── 수상·추천 컬렉션 섹션 ───────────────── */
+.collection-section {
+  display: flex; flex-direction: column; gap: .55rem;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb, 5,150,105),.05) 0%, transparent 100%);
+  border: 1px solid rgba(var(--accent-rgb, 5,150,105),.13);
+  border-radius: .9rem; padding: .8rem 1rem .9rem;
+  margin-bottom: .1rem;
+}
+.collection-header {
+  display: flex; align-items: baseline; gap: .55rem; flex-wrap: wrap;
+}
+.collection-title {
+  font-size: .82rem; font-weight: 800; color: var(--text); letter-spacing: -.01em;
+}
+.collection-sub {
+  font-size: .7rem; color: var(--text-sub);
+}

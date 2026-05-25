@@ -472,10 +472,12 @@ export default function Home() {
       {/* 헤더 */}
       <section className="hero">
         <h1 className="title-gradient">책탐정 도서나루</h1>
+        <p className="app-tagline">공공데이터를 활용한 어린이·청소년 도서 탐색 서비스</p>
         <p className="subtitle">
-          칼데콧 · 안데르센 · 볼로냐 · 카네기 · 국립어린이도서관 · 서울시교육청 · 서울어린이도서관 · 국립중앙도서관 · 교과연계도서{" "}
-          <strong>{allBooks.length.toLocaleString()}권</strong>을 AI로 검색하고,
-          내 근처 도서관 대출 여부를 바로 확인하세요.
+          국제 아동문학상 수상작과 각 교육기관 추천도서{" "}
+          <strong>{allBooks.length.toLocaleString()}권</strong> 중에서,<br />
+          주제·감정·상황으로 검색해 <strong>인증된 도서</strong>를 추천받고<br />
+          내 근처 도서관의 <strong>대출 가능 여부</strong>를 바로 확인하세요.
         </p>
 
         {/* 앱 소개 토글 */}
@@ -577,6 +579,28 @@ export default function Home() {
             </div>
           )}
 
+          {/* 수상·추천 컬렉션 — 핵심 섹션 (상단 배치) */}
+          <div className="collection-section">
+            <div className="collection-header">
+              <span className="collection-title">🏆 수상·추천 컬렉션</span>
+              <span className="collection-sub">전체 또는 특정 컬렉션에서 검색</span>
+            </div>
+            <div className="filter-chips">
+              {Object.entries(SOURCE_CONFIG).map(([src, cfg]) => (
+                <button
+                  key={src}
+                  className={`chip ${selectedSources.includes(src) ? cfg.chipClass : ""}`}
+                  onClick={() => toggleSource(src)}
+                  title={
+                    AWARD_SOURCES.has(src)
+                      ? `${cfg.desc}\n※ 최근 20년(2006~2026년) 수상작 기준`
+                      : cfg.desc
+                  }
+                >{cfg.label}</button>
+              ))}
+            </div>
+          </div>
+
           {/* 연령 필터 */}
           <div className="filter-row">
             <span className="filter-label">연령</span>
@@ -595,29 +619,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 출처 필터 */}
-          <div className="filter-row">
-            <span className="filter-label">출처</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: ".35rem", flex: 1 }}>
-              <div className="filter-chips">
-                {Object.entries(SOURCE_CONFIG).map(([src, cfg]) => (
-                  <button
-                    key={src}
-                    className={`chip ${selectedSources.includes(src) ? cfg.chipClass : ""}`}
-                    onClick={() => toggleSource(src)}
-                    title={cfg.desc}
-                  >{cfg.label}</button>
-                ))}
-              </div>
-              <p className="award-period-note">
-                🏆 칼데콧 · 안데르센 · 볼로냐 · 카네기는 <strong>최근 20년(2006~2026년) 수상작</strong> 기준입니다.
-              </p>
-            </div>
-          </div>
-
           {/* 국내출간 + 독서활동 토글 */}
           <div className="filter-row">
-            <span className="filter-label">필터</span>
+            <span className="filter-label">세부 조건</span>
             <div className="filter-chips">
               <button
                 className={`chip ${showKoreanOnly ? "active" : ""}`}
@@ -655,23 +659,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* 색상 테마 선택 */}
-          <div className="filter-row">
-            <span className="filter-label">테마</span>
-            <div className="theme-swatches">
-              {Object.entries(COLOR_THEMES).map(([key, t]) => (
-                <button
-                  key={key}
-                  className={`theme-swatch ${colorTheme === key ? "swatch-active" : ""}`}
-                  style={{ "--swatch-color": t.accent } as React.CSSProperties}
-                  onClick={() => setColorTheme(key)}
-                  title={t.label}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* AI 모드 배너 */}
