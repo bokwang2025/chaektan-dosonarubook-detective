@@ -434,20 +434,121 @@ export default function Home() {
     );
   };
 
-  // ── 도서관 조회 (위치 파라미터 별도 받음 — 모달 내 위치허용 후 재조회용) ──
+  // ── 도서관 조회 — 브라우저에서 data4library.kr 직접 호출 (CORS: *) ──
+  // Vercel 서버 경유 시 "IP 등록 필요" 오류 발생 → 클라이언트 직접 호출로 우회
   const fetchLibraries = useCallback(async (book: Book, loc: { lat: number; lng: number } | null) => {
     setLibLoading(true);
     try {
-      // 한국 도서관은 한국 ISBN으로 검색해야 찾을 수 있음
-      const searchIsbn = book.koreanIsbn || book.isbn;
-      const params = new URLSearchParams({ isbn: searchIsbn });
+      const LIB_KEY = "be9456f40126dbefd5c69c0a647affe45f49a41766a6b10c5919c531810fe1ef";
+      const BASE_LIB = "https://data4library.kr/api";
+      const isbn = book.koreanIsbn || book.isbn;
+      if (!isbn) { setLibraries([]); return; }
+
+      // Haversine 거리 (km)
+      const calcDist = (la1: number, lo1: number, la2: number, lo2: number) => {
+        const R = 6371, dLa = (la2 - la1) * Math.PI / 180, dLo = (lo2 - lo1) * Math.PI / 180;
+        const a = Math.sin(dLa / 2) ** 2 + Math.cos(la1 * Math.PI / 180) * Math.cos(la2 * Math.PI / 180) * Math.sin(dLo / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
+      // 위경도 → 지역코드
+      const regionFromCoords = (la: number, lo: number): string => {
+        if (la > 37.40 && la < 37.71 && lo > 126.79 && lo < 127.19) return "11";
+        if (la > 37.27 && la < 37.63 && lo > 126.44 && lo < 126.80) return "23";
+        if (la > 36.90 && la < 38.31 && lo > 126.30 && lo < 127.90) return "31";
+        if (la > 36.19 && la < 36.52 && lo > 127.29 && lo < 127.51) return "25";
+        if (la > 36.40 && la < 36.62 && lo > 127.17 && lo < 127.32) return "29";
+        if (la > 35.73 && la < 36.03 && lo > 128.50 && lo < 128.78) return "22";
+        if (la > 35.04 && la < 35.30 && lo > 128.86 && lo < 129.32) return "21";
+        if (la > 35.44 && la < 35.64 && lo > 129.04 && lo < 129.42) return "26";
+        if (la > 35.05 && la < 35.27 && lo > 126.78 && lo < 126.97) return "24";
+        if (la > 37.00 && la < 38.60 && lo > 127.70 && lo < 129.40) return "32";
+        if (la > 36.20 && la < 37.20 && lo > 127.40 && lo < 128.50) return "33";
+        if (la > 36.00 && la < 37.00 && lo > 126.10 && lo < 127.40) return "34";
+        if (la > 35.30 && la < 36.20 && lo > 126.50 && lo < 127.80) return "35";
+        if (la > 34.20 && la < 35.30 && lo > 126.00 && lo < 127.60) return "36";
+        if (la > 35.50 && la < 37.30 && lo > 128.40 && lo < 129.50) return "37";
+        if (la > 34.70 && la < 35.70 && lo > 127.60 && lo < 129.10) return "38";
+        if (la > 33.10 && la < 33.60 && lo > 126.10 && lo < 126.95) return "39";
+        return "11";
+      };
+
+      // libSrchByBook 1회 호출
+      type RawLib = { lib: { libCode: string; libName: string; address: string; tel: string; homepage: string; latitude: string; longitude: string } };
+      const fetchLibs = async (region: string, pageSize = 10): Promise<RawLib[]> => {
+        try {
+          const url = `${BASE_LIB}/libSrchByBook?authKey=${LIB_KEY}&isbn=${isbn}&region=${region}&pageSize=${pageSize}&format=json`;
+          const res = await fetch(url);
+          const data = await res.json();
+          return (data?.response?.libs ?? []) as RawLib[];
+        } catch { return []; }
+      };
+
+      // 지역 결정 및 검색
+      let rawLibs: RawLib[] = [];
       if (loc) {
-        params.set("lat", String(loc.lat));
-        params.set("lng", String(loc.lng));
+        const region = regionFromCoords(loc.lat, loc.lng);
+        rawLibs = await fetchLibs(region, 30);
+        if (rawLibs.length < 3) {
+          const extras = await Promise.all(
+            ["11", "31"].filter(r => r !== region).map(r => fetchLibs(r, 10))
+          );
+          rawLibs = [...rawLibs, ...extras.flat()];
+        }
+      } else {
+        const [a, b] = await Promise.all([fetchLibs("11", 10), fetchLibs("31", 10)]);
+        rawLibs = [...a, ...b];
+        if (!rawLibs.length) {
+          const extras = await Promise.all(["21","22","23","24","25","26"].map(r => fetchLibs(r, 5)));
+          rawLibs = extras.flat();
+        }
       }
-      const res  = await fetch(`/api/library?${params}`);
-      const data = await res.json();
-      setLibraries(data.libraries || []);
+
+      // 중복 제거 → 거리 계산 → 상위 5개
+      const seen = new Set<string>();
+      const uniq = rawLibs.filter(({ lib }) => { if (seen.has(lib.libCode)) return false; seen.add(lib.libCode); return true; });
+      const withDist = uniq.map(({ lib }) => ({
+        ...lib,
+        distance: loc ? calcDist(loc.lat, loc.lng, parseFloat(lib.latitude || "0"), parseFloat(lib.longitude || "0")) : undefined,
+      }));
+      if (loc) withDist.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
+      const top5 = withDist.slice(0, 5);
+
+      if (!top5.length) { setLibraries([]); return; }
+
+      // bookExist 병렬 확인
+      const buildUrl = (hp: string) => `${hp.replace(/\/$/, "")}/search/tot/result?searchType=SIMPLE&searchKey=ISBN&searchValue=${isbn}`;
+      const results = await Promise.all(
+        top5.map(async lib => {
+          try {
+            const url = `${BASE_LIB}/bookExist?authKey=${LIB_KEY}&libCode=${lib.libCode}&isbn13=${isbn}&format=json`;
+            const res  = await fetch(url);
+            const data = await res.json();
+            const r    = data?.response?.result ?? {};
+            if (r.hasBook === "N") return null;
+            return {
+              libName: lib.libName, address: lib.address, tel: lib.tel,
+              homepage: lib.homepage,
+              bookSearchUrl: lib.homepage ? buildUrl(lib.homepage) : null,
+              distance: lib.distance,
+              loanAvailable: r.loanAvailable === "Y",
+            };
+          } catch { return null; }
+        })
+      );
+
+      const finalLibs = results.filter((x): x is NonNullable<typeof x> => x !== null);
+      setLibraries(
+        finalLibs.length
+          ? finalLibs
+          : top5.map(lib => ({
+              libName: lib.libName, address: lib.address, tel: lib.tel,
+              homepage: lib.homepage,
+              bookSearchUrl: lib.homepage ? buildUrl(lib.homepage) : null,
+              distance: lib.distance,
+              loanAvailable: false,
+            }))
+      );
     } catch { setLibraries([]); }
     finally { setLibLoading(false); }
   }, []);
