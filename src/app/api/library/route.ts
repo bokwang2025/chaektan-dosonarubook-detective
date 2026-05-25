@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const maxDuration = 25;
+
+// 도서관 홈페이지 → 도서 직접 검색 URL 구성
+// 한국 공공도서관 대부분이 사용하는 DLS(올인원) OPAC URL 패턴 적용
+function buildBookSearchUrl(homepage: string, isbn: string): string {
+  const base = homepage.replace(/\/$/, "");
+  return `${base}/search/tot/result?searchType=SIMPLE&searchKey=ISBN&searchValue=${isbn}`;
+}
+
 const LIB_API_KEY = process.env.LIB_API_KEY;
 const BASE = "https://data4library.kr/api";
 
@@ -143,19 +152,19 @@ export async function GET(req: NextRequest) {
           const res  = await fetch(url);
           const data = await res.json();
           const result = data?.response?.result ?? {};
-          const hasBook   = result.hasBook   ?? "N";
+          const hasBook   = result.hasBook;        // "Y" | "N" | undefined
           const loanAvail = result.loanAvailable ?? "N";
-          const loanUrl = (result.loanUrl as string | undefined) || null;
-          if (hasBook !== "Y") return null; // 실제 미소장이면 제외
+          // 명시적으로 "N"인 경우만 제외 (API 실패·빈응답이면 libSrchByBook 결과 신뢰)
+          if (hasBook === "N") return null;
           return {
             libCode:       lib.libCode,
             libName:       lib.libName,
             address:       lib.address,
             tel:           lib.tel,
             homepage:      lib.homepage,
+            bookSearchUrl: lib.homepage ? buildBookSearchUrl(lib.homepage, isbn) : null,
             distance:      lib.distance,
             loanAvailable: loanAvail === "Y",
-            loanUrl,
           };
         } catch {
           return null;

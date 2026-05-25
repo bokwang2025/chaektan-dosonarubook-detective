@@ -26,7 +26,7 @@ interface Book {
 interface LibraryInfo {
   libCode?: string;
   libName: string; address: string; tel: string; homepage: string;
-  loanUrl?: string | null;
+  bookSearchUrl?: string | null;
   loanAvailable: boolean; distance?: number;
 }
 
@@ -1125,11 +1125,11 @@ export default function Home() {
                   <div className="lib-dist">📍 {lib.distance.toFixed(1)}km</div>
                 )}
                 {lib.tel && <div className="lib-tel">📞 {lib.tel}</div>}
-                {(lib.loanUrl || lib.homepage) && (
+                {(lib.bookSearchUrl || lib.homepage) && (
                   <a className="lib-link"
-                    href={lib.loanUrl || lib.homepage}
+                    href={lib.bookSearchUrl || lib.homepage}
                     target="_blank" rel="noopener noreferrer">
-                    {lib.loanUrl ? "이 도서관에서 도서 바로 확인 →" : "홈페이지에서 직접 확인 →"}
+                    도서관에서 이 책 바로 검색 →
                   </a>
                 )}
               </div>
