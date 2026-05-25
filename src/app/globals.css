@@ -739,3 +739,13 @@ body {
   font-size: .6rem; font-weight: 500; opacity: .7;
   margin-left: .2rem; font-style: normal;
 }
+
+/* ── AI 검색 필터 해제 버튼 ───────────────── */
+.ai-clear-filter-btn {
+  margin-top: .5rem; padding: .4rem 1rem;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 2rem;
+  font-size: .78rem; font-weight: 700; cursor: pointer;
+  transition: opacity .2s;
+}
+.ai-clear-filter-btn:hover { opacity: .85; }

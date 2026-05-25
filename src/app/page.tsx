@@ -269,8 +269,12 @@ export default function Home() {
     setAiMode(true); setAiLoading(true); setAiError("");
 
     try {
+      // AI에게 보내는 풀: 현재 활성 필터를 먼저 적용 → 필터 범위 안에서만 추천
       const payload = booksWithIsbn
         .filter((b) => b.tags.length > 0)
+        .filter((b) => !showKoreanOnly || (b.koreanIsbn && b.koreanIsbn.length > 0))
+        .filter((b) => selectedAges.length === 0    || selectedAges.includes(b.targetAge))
+        .filter((b) => selectedSources.length === 0 || selectedSources.includes(b.source))
         .map((b) => ({
           id: b.id,
           title: b.koreanTitle || b.originalTitle,
@@ -293,14 +297,6 @@ export default function Home() {
           return book ? { ...book, aiReason: r.reason } : null;
         })
         .filter(Boolean);
-
-      // AI 결과에도 현재 필터 적용
-      if (showKoreanOnly)
-        aiBooks = aiBooks.filter((b) => b.koreanIsbn && b.koreanIsbn.length > 0);
-      if (selectedAges.length > 0)
-        aiBooks = aiBooks.filter((b) => selectedAges.includes(b.targetAge));
-      if (selectedSources.length > 0)
-        aiBooks = aiBooks.filter((b) => selectedSources.includes(b.source));
 
       setBooks(aiBooks);
     } catch {
@@ -820,7 +816,21 @@ export default function Home() {
               <>
                 <Sparkles size={36} className="empty-ai-icon" />
                 <p>"{query}"에 맞는 책을 찾지 못했어요.</p>
-                <small>좀 더 구체적인 상황으로 다시 물어보세요.</small>
+                <small>
+                  {showKoreanOnly || selectedAges.length > 0 || selectedSources.length > 0
+                    ? "필터 범위 안에서 적합한 책을 찾지 못했어요. 필터를 해제하거나 검색어를 바꿔보세요."
+                    : "좀 더 구체적인 상황으로 다시 물어보세요."}
+                </small>
+                {(showKoreanOnly || selectedAges.length > 0 || selectedSources.length > 0) && (
+                  <button className="ai-clear-filter-btn"
+                    onClick={() => {
+                      setShowKoreanOnly(false);
+                      setSelectedAges([]);
+                      setSelectedSources([]);
+                    }}>
+                    필터 모두 해제하고 다시 검색
+                  </button>
+                )}
                 <div className="empty-ai-suggestions">
                   <span>이렇게 바꿔보세요 →</span>
                   {["전학 가서 외로운 아이에게", "용기가 필요한 순간에", "동생이 생긴 아이에게"].map((ex) => (
