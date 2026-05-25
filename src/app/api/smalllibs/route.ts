@@ -20,6 +20,35 @@ const SEOUL_GU_CODE: Record<string, string> = {
   강동구: "025",
 };
 
+// 서울 인접 구 매핑 (경계를 접한 구들)
+const SEOUL_GU_ADJACENT: Record<string, string[]> = {
+  종로구: ["중구","성북구","은평구","서대문구","마포구"],
+  중구: ["종로구","성동구","용산구"],
+  용산구: ["중구","마포구","서대문구","성동구","동작구","영등포구"],
+  성동구: ["중구","광진구","동대문구","성북구","용산구"],
+  광진구: ["성동구","동대문구","중랑구","강동구","송파구"],
+  동대문구: ["성북구","중랑구","광진구","성동구","종로구"],
+  중랑구: ["노원구","도봉구","동대문구","광진구"],
+  성북구: ["종로구","동대문구","노원구","강북구","도봉구"],
+  강북구: ["성북구","도봉구","노원구"],
+  도봉구: ["강북구","노원구","중랑구","성북구"],
+  노원구: ["도봉구","강북구","성북구","중랑구"],
+  은평구: ["종로구","서대문구","마포구"],
+  서대문구: ["은평구","종로구","마포구","용산구"],
+  마포구: ["은평구","서대문구","용산구","영등포구"],
+  양천구: ["강서구","구로구","영등포구"],
+  강서구: ["마포구","양천구","구로구"],
+  구로구: ["강서구","양천구","영등포구","동작구","금천구"],
+  금천구: ["구로구","동작구","관악구"],
+  영등포구: ["마포구","용산구","동작구","구로구","양천구"],
+  동작구: ["용산구","영등포구","구로구","금천구","관악구","서초구"],
+  관악구: ["동작구","금천구","서초구"],
+  서초구: ["관악구","동작구","강남구","송파구"],
+  강남구: ["서초구","송파구","강동구"],
+  송파구: ["강남구","강동구","광진구","서초구"],
+  강동구: ["송파구","광진구"],
+};
+
 // 광역시/도 → knu area_code 매핑
 const AREA_CODE: Record<string, string> = {
   서울특별시: "11", 부산광역시: "21", 대구광역시: "22", 인천광역시: "23",
@@ -54,7 +83,8 @@ export async function GET(req: NextRequest) {
   try {
     // ── 1. Kakao 역지오코딩 → 시도/구 이름 ──────────────────────────
     let areaCode = "11"; // 기본 서울
-    let cityCode = "all";
+    let guName = "";
+    const cityCodes: string[] = []; // 검색할 구 코드 목록
 
     if (KAKAO_KEY) {
       try {
@@ -69,38 +99,57 @@ export async function GET(req: NextRequest) {
 
         if (region) {
           const sido = region.region_1depth_name;
-          const gu = region.region_2depth_name;
+          guName = region.region_2depth_name;
           areaCode = AREA_CODE[sido] ?? "11";
-          if (sido.includes("서울")) {
-            cityCode = SEOUL_GU_CODE[gu] ?? "all";
+          if (sido.includes("서울") && SEOUL_GU_CODE[guName]) {
+            // 현재 구 + 인접 구 코드 수집
+            cityCodes.push(SEOUL_GU_CODE[guName]);
+            const adjacent = SEOUL_GU_ADJACENT[guName] ?? [];
+            for (const adj of adjacent) {
+              if (SEOUL_GU_CODE[adj]) cityCodes.push(SEOUL_GU_CODE[adj]);
+            }
           }
         }
-      } catch { /* 역지오코딩 실패시 기본값 사용 */ }
+      } catch { /* 역지오코딩 실패시 전체 검색 */ }
     }
 
-    // ── 2. knu 해당 구/지역 작은도서관 목록 ─────────────────────────
-    const libListRes = await fetch(`${KNU_BASE}/main/get/liblist`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        pageno: "1",
-        display: "50",
-        code: areaCode,
-        city_code: cityCode,
-        keyword: "",
-        bookium_yn: "all",
-      }).toString(),
-    });
+    // ── 2. knu 현재 구 + 인접 구 작은도서관 목록 병렬 조회 ──────────
+    const fetchLibList = async (cityCode: string) => {
+      try {
+        const res = await fetch(`${KNU_BASE}/main/get/liblist`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            pageno: "1", display: "50",
+            code: areaCode, city_code: cityCode,
+            keyword: "", bookium_yn: "all",
+          }).toString(),
+        });
+        const data = await res.json();
+        return data?.LIB_LIST?.LIST_DATA ?? [];
+      } catch { return []; }
+    };
 
-    if (!libListRes.ok) return NextResponse.json({ libraries: [] });
+    // 구 코드가 있으면 해당 구들 병렬 조회, 없으면 전체 조회
+    let allLibLists;
+    if (cityCodes.length > 0) {
+      allLibLists = await Promise.all(cityCodes.map(fetchLibList));
+    } else {
+      allLibLists = [await fetchLibList("all")];
+    }
 
-    const libListData = await libListRes.json();
+    // 중복 제거 후 합치기
+    const seenMC = new Set<string>();
     const libs: Array<{
       MANAGE_CODE: string;
       LIB_NAME: string;
       LIB_ADDRESS: string;
       LIB_URL: string;
-    }> = libListData?.LIB_LIST?.LIST_DATA ?? [];
+    }> = allLibLists.flat().filter((lib: { MANAGE_CODE: string }) => {
+      if (seenMC.has(lib.MANAGE_CODE)) return false;
+      seenMC.add(lib.MANAGE_CODE);
+      return true;
+    });
 
     if (!libs.length) return NextResponse.json({ libraries: [] });
 
