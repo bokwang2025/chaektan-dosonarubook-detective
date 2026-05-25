@@ -90,10 +90,12 @@ const AGE_ORDER = ["6-7세", "초등1-2", "초등3-4", "초등5-6", "청소년",
 
 // "어린이" → UI 표시용 레이블
 function ageLabel(age: string): string {
-  return age === "어린이" ? "어린이" : age;
+  if (age === "6-7세") return "5-7세";
+  if (age === "어린이") return "어린이";
+  return age;
 }
 const AGE_TOOLTIP: Record<string, string> = {
-  "6-7세":   "유아·유치원~초등 저학년 대상 그림책",
+  "6-7세":   "5세~7세 유아·유치원생 대상 그림책",
   "초등1-2": "초등학교 1~2학년 대상",
   "초등3-4": "초등학교 3~4학년 대상",
   "초등5-6": "초등학교 5~6학년 대상",
