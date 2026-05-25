@@ -562,6 +562,25 @@ body {
 .lib-link { display: inline-block; margin-top: .45rem; font-size: .78rem; color: var(--accent); text-decoration: none; }
 .lib-link:hover { text-decoration: underline; }
 
+/* ── 작은도서관 섹션 ──────────────────────── */
+.small-lib-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .82rem; font-weight: 700; color: var(--text-sub);
+  margin: 1.1rem 0 .5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.small-lib-note {
+  font-size: .7rem; font-weight: 400; color: var(--text-sub);
+  background: rgba(0,0,0,.04); padding: .15rem .5rem; border-radius: 2rem;
+}
+.small-lib-card {
+  background: #f0fdf4; border-color: #bbf7d0;
+}
+.small-lib-empty {
+  padding: .8rem 0 .4rem; font-size: .82rem;
+}
+
 .location-error-msg {
   font-size: .78rem; color: var(--red);
   background: #fee2e2; border: 1px solid #fecaca;

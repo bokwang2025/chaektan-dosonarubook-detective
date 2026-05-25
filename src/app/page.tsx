@@ -30,6 +30,12 @@ interface LibraryInfo {
   loanAvailable: boolean; distance?: number;
 }
 
+interface SmallLibInfo {
+  libName: string; address: string; manageCode: string;
+  homepage?: string | null; bookSearchUrl?: string | null;
+  loanAvailable: boolean; distance?: number; isSmall: true;
+}
+
 // ─── 책 형태 배지 ─────────────────────────────
 const FORMAT_RULES = [
   { key: "wordless",   emoji: "🔤", label: "글없는그림책",
@@ -213,6 +219,8 @@ export default function Home() {
   const [activeTags,       setActiveTags]       = useState<string[]>([]);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
   const [libLoading,     setLibLoading]     = useState(false);
+  const [smallLibraries,    setSmallLibraries]    = useState<SmallLibInfo[]>([]);
+  const [smallLibLoading,   setSmallLibLoading]   = useState(false);
   const [userLocation,   setUserLocation]   = useState<{lat:number;lng:number}|null>(null);
   const [locationLabel,  setLocationLabel]  = useState("내 위치로 도서관 찾기");
   const [locationError,  setLocationError]  = useState("");
@@ -558,9 +566,24 @@ export default function Home() {
     finally { setLibLoading(false); }
   }, []);
 
+  // ── 작은도서관 조회 (knu.nl.go.kr 서버 경유) ──────────────────────
+  const fetchSmallLibraries = useCallback(async (book: Book, loc: { lat: number; lng: number } | null) => {
+    if (!loc) { setSmallLibraries([]); return; }
+    const isbn = book.koreanIsbn || book.isbn;
+    if (!isbn) { setSmallLibraries([]); return; }
+    setSmallLibLoading(true);
+    try {
+      const res = await fetch(`/api/smalllibs?isbn=${isbn}&lat=${loc.lat}&lng=${loc.lng}`);
+      const data = await res.json();
+      setSmallLibraries(data.libraries ?? []);
+    } catch { setSmallLibraries([]); }
+    finally { setSmallLibLoading(false); }
+  }, []);
+
   const handleCheckLibrary = (book: Book) => {
-    setSelectedBook(book); setLibraries([]);
+    setSelectedBook(book); setLibraries([]); setSmallLibraries([]);
     fetchLibraries(book, userLocation);
+    fetchSmallLibraries(book, userLocation);
   };
 
   // ── 상세페이지 열기 (줄거리 AI 생성) ──────────
@@ -602,7 +625,10 @@ export default function Home() {
         setLocationDenied(false);
         setLocationError("");
         // 위치 허용 즉시 현재 선택된 책으로 재조회
-        if (selectedBook) fetchLibraries(selectedBook, loc);
+        if (selectedBook) {
+          fetchLibraries(selectedBook, loc);
+          fetchSmallLibraries(selectedBook, loc);
+        }
       },
       () => {
         setLibLoading(false);
@@ -1243,6 +1269,48 @@ export default function Home() {
                 )}
               </div>
             ))}
+
+            {/* ── 작은도서관 섹션 ── */}
+            {userLocation && (
+              <>
+                <div className="small-lib-section-header">
+                  📚 근처 작은도서관
+                  <span className="small-lib-note">작은도서관 정보누리 기준</span>
+                </div>
+                {smallLibLoading && (
+                  <div className="lib-loading">
+                    <Loader2 size={18} className="spin" />
+                    <span>작은도서관 조회 중…</span>
+                  </div>
+                )}
+                {!smallLibLoading && smallLibraries.length === 0 && (
+                  <div className="lib-empty small-lib-empty">
+                    근처 작은도서관에서 소장 정보를 찾지 못했어요.
+                  </div>
+                )}
+                {!smallLibLoading && smallLibraries.map((lib, i) => (
+                  <div key={i} className="lib-card small-lib-card">
+                    <div className="lib-header">
+                      <span className="lib-name">{lib.libName}</span>
+                      <span className={`loan-badge ${lib.loanAvailable ? "available" : "unavailable"}`}>
+                        {lib.loanAvailable ? "대출 가능" : "대출 중"}
+                      </span>
+                    </div>
+                    <div className="lib-addr">{lib.address}</div>
+                    {lib.distance !== undefined && (
+                      <div className="lib-dist">📍 {lib.distance.toFixed(1)}km</div>
+                    )}
+                    {lib.bookSearchUrl && (
+                      <a className="lib-link"
+                        href={lib.bookSearchUrl}
+                        target="_blank" rel="noopener noreferrer">
+                        작은도서관 바로가기 →
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       )}
