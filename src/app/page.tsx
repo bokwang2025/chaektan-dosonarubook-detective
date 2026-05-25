@@ -6,6 +6,7 @@ import {
   Sparkles, X, ChevronDown, Loader2, Info,
 } from "lucide-react";
 import { getRelatedKeywords } from "../lib/smartSearch";
+import libraryCounts from "../data/library_counts.json";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
 import BookCover from "../components/BookCover";
@@ -216,7 +217,7 @@ export default function Home() {
   const [locationLabel,  setLocationLabel]  = useState("내 위치로 도서관 찾기");
   const [locationError,  setLocationError]  = useState("");
   const [showAll,        setShowAll]        = useState(false);
-  const [sortMode,       setSortMode]       = useState<"none"|"recent"|"multi"|"library">("none");
+  const [sortModes,      setSortModes]      = useState<Array<"recent"|"multi"|"library">>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const relatedTags = useMemo(() => {
@@ -275,29 +276,33 @@ export default function Home() {
         )
       );
 
-    // ── 정렬 적용 ──────────────────────────
-    if (sortMode === "recent") {
+    // ── 다중 정렬 적용 (선택 순서 = 우선순위) ──
+    if (sortModes.length > 0) {
+      const counts = libraryCounts as Record<string, number>;
       filtered = [...filtered].sort((a, b) => {
-        const ya = parseInt(a.publishedYear || a.awardYear || "0");
-        const yb = parseInt(b.publishedYear || b.awardYear || "0");
-        return yb - ya;
-      });
-    } else if (sortMode === "multi") {
-      filtered = [...filtered].sort((a, b) => {
-        const sa = (a.additionalSources?.length ?? 0) + (a.awardCategory === "Winner" ? 1 : 0);
-        const sb = (b.additionalSources?.length ?? 0) + (b.awardCategory === "Winner" ? 1 : 0);
-        return sb - sa;
-      });
-    } else if (sortMode === "library") {
-      filtered = [...filtered].sort((a, b) => {
-        const ha = a.koreanIsbn ? 1 : 0;
-        const hb = b.koreanIsbn ? 1 : 0;
-        return hb - ha;
+        for (const mode of sortModes) {
+          let diff = 0;
+          if (mode === "recent") {
+            const ya = parseInt(a.publishedYear || a.awardYear || "0");
+            const yb = parseInt(b.publishedYear || b.awardYear || "0");
+            diff = yb - ya;
+          } else if (mode === "multi") {
+            const sa = (a.additionalSources?.length ?? 0) + (a.awardCategory === "Winner" ? 1 : 0);
+            const sb = (b.additionalSources?.length ?? 0) + (b.awardCategory === "Winner" ? 1 : 0);
+            diff = sb - sa;
+          } else if (mode === "library") {
+            const ca = counts[a.koreanIsbn] ?? (a.koreanIsbn ? 0 : -1);
+            const cb = counts[b.koreanIsbn] ?? (b.koreanIsbn ? 0 : -1);
+            diff = cb - ca;
+          }
+          if (diff !== 0) return diff;
+        }
+        return 0;
       });
     }
 
     setBooks(showAll ? filtered : filtered.slice(0, 60));
-  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, activeTags, sortMode]);
+  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, activeTags, sortModes]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -372,7 +377,7 @@ export default function Home() {
     setSearchMode(mode);
     setQuery("");
     setActiveTags([]);
-    setSortMode("none");
+    setSortModes([]);
     setAiMode(false);
     setAiEngine("");
     setAiError("");
@@ -721,27 +726,44 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 정렬 */}
+          {/* 정렬 (복수 선택 가능 — 선택 순서가 우선순위) */}
           <div className="filter-row sort-row">
             <span className="filter-label">정렬</span>
-            <div className="filter-chips">
+            <div className="filter-chips" style={{ alignItems: "center", gap: ".35rem" }}>
+              {sortModes.length > 0 && (
+                <button className="sort-clear-btn" onClick={() => { setSortModes([]); setAiMode(false); }}>
+                  초기화
+                </button>
+              )}
               {(
                 [
-                  { key: "none",    label: "기본",             title: "수집 순서 그대로 표시" },
-                  { key: "recent",  label: "📅 최신 출간",     title: "출판연도 기준 최신순으로 정렬" },
-                  { key: "multi",   label: "🏆 다수 수상·추천", title: "여러 기관에서 중복 수상·추천된 책 우선" },
-                  { key: "library", label: "📚 도서관 보유",    title: "국내 출간 ISBN이 있는 책 우선 (도서관에서 찾기 쉬운 책)" },
+                  { key: "recent",  label: "📅 최신 출간",      title: "출판연도 기준 최신순으로 정렬" },
+                  { key: "multi",   label: "🏆 다수 수상·추천",  title: "여러 기관에서 중복 수상·추천된 책 우선\n수상 부문 Winner 여부도 함께 반영" },
+                  { key: "library", label: "📚 도서관 보유수",   title: "전국 도서관 보유 수가 많은 책 우선\n(서울+경기 보유 도서관 합산 기준)" },
                 ] as const
-              ).map(({ key, label, title }) => (
-                <button
-                  key={key}
-                  className={`chip ${sortMode === key ? "active" : ""}`}
-                  onClick={() => { setSortMode(key); setAiMode(false); }}
-                  title={title}
-                >
-                  {label}
-                </button>
-              ))}
+              ).map(({ key, label, title }) => {
+                const idx = sortModes.indexOf(key);
+                const isActive = idx >= 0;
+                return (
+                  <button
+                    key={key}
+                    className={`chip sort-chip ${isActive ? "active" : ""}`}
+                    onClick={() => {
+                      setSortModes((prev) =>
+                        prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+                      );
+                      setAiMode(false);
+                    }}
+                    title={title}
+                  >
+                    {isActive && <span className="sort-priority">{idx + 1}</span>}
+                    {label}
+                  </button>
+                );
+              })}
+              {sortModes.length > 1 && (
+                <span className="sort-hint">← 왼쪽부터 주정렬</span>
+              )}
             </div>
           </div>
 
