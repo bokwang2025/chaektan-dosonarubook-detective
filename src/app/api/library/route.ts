@@ -9,7 +9,7 @@ function buildBookSearchUrl(homepage: string, isbn: string): string {
   return `${base}/search/tot/result?searchType=SIMPLE&searchKey=ISBN&searchValue=${isbn}`;
 }
 
-const LIB_API_KEY = process.env.LIB_API_KEY;
+const LIB_API_KEY = process.env.LIB_API_KEY || "be9456f40126dbefd5c69c0a647affe45f49a41766a6b10c5919c531810fe1ef";
 const BASE = "https://data4library.kr/api";
 
 // 전국 지역코드
