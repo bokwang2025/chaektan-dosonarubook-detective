@@ -251,8 +251,13 @@ export default function Home() {
 
     if (showKoreanOnly)
       filtered = filtered.filter((b) => b.koreanIsbn && b.koreanIsbn.length > 0);
-    if (showActivityOnly)
-      filtered = filtered.filter((b) => b.activity && b.activity.trim().length > 0);
+    // 독서활동 있음: 활동 자료 보유 책을 상단 우선 정렬
+    // (기관추천도서엔 활동 데이터 없음 → 제외가 아닌 하단 배치)
+    if (showActivityOnly) {
+      const withAct    = filtered.filter((b) => b.activity?.trim());
+      const withoutAct = filtered.filter((b) => !b.activity?.trim());
+      filtered = [...withAct, ...withoutAct];
+    }
 
     if (query.trim()) {
       const q = query.toLowerCase();
@@ -820,8 +825,9 @@ export default function Home() {
               <button
                 className={`chip ${showActivityOnly ? "active" : ""}`}
                 onClick={() => setShowActivityOnly(v => !v)}
+                title="독서활동 자료가 있는 책을 상단에 표시합니다 (국제상 수상작 중심)"
               >
-                ✏️ 독서활동 있음
+                ✏️ 독서활동 우선
               </button>
             </div>
           </div>
