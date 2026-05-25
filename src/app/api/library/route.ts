@@ -156,41 +156,43 @@ export async function GET(req: NextRequest) {
 
     const top5 = libraries.slice(0, 5);
 
+    // 출력 타입
+    interface LibResult {
+      libCode: string; libName: string; address: string; tel: string;
+      homepage: string; bookSearchUrl: string | null;
+      distance: number | undefined; loanAvailable: boolean;
+    }
+
+    // lib → LibResult 변환 (loanAvailable 기본값 false)
+    const toResult = (lib: LibRaw, loanAvailable = false): LibResult => ({
+      libCode:       lib.libCode,
+      libName:       lib.libName,
+      address:       lib.address,
+      tel:           lib.tel,
+      homepage:      lib.homepage,
+      bookSearchUrl: lib.homepage ? buildBookSearchUrl(lib.homepage, isbn) : null,
+      distance:      lib.distance,
+      loanAvailable,
+    });
+
     // ── bookExist: 아직 시간 여유 있으면 실행, 없으면 스킵 ──
-    let finalLibs;
+    let finalLibs: LibResult[] = [];
+
     if (!timedOut) {
       const checked = await Promise.all(
-        top5.map(async lib => {
-          if (timedOut) return null; // 루프 중에도 체크
+        top5.map(async (lib): Promise<LibResult | null> => {
+          if (timedOut) return null;
           const exist = await checkExist(lib.libCode, isbn);
           if (exist?.hasBook === "N") return null; // 명시적 미소장만 제외
-          return {
-            libCode:       lib.libCode,
-            libName:       lib.libName,
-            address:       lib.address,
-            tel:           lib.tel,
-            homepage:      lib.homepage,
-            bookSearchUrl: lib.homepage ? buildBookSearchUrl(lib.homepage, isbn) : null,
-            distance:      lib.distance,
-            loanAvailable: exist?.loanAvailable === "Y",
-          };
+          return toResult(lib, exist?.loanAvailable === "Y");
         })
       );
-      finalLibs = checked.filter(Boolean);
+      finalLibs = checked.filter((x): x is LibResult => x !== null);
     }
 
     // bookExist 실패/타임아웃 → libSrchByBook 결과 그대로 반환
-    if (!finalLibs?.length) {
-      finalLibs = top5.map(lib => ({
-        libCode:       lib.libCode,
-        libName:       lib.libName,
-        address:       lib.address,
-        tel:           lib.tel,
-        homepage:      lib.homepage,
-        bookSearchUrl: lib.homepage ? buildBookSearchUrl(lib.homepage, isbn) : null,
-        distance:      lib.distance,
-        loanAvailable: false,
-      }));
+    if (!finalLibs.length) {
+      finalLibs = top5.map(lib => toResult(lib, false));
     }
 
     clearTimeout(hardTimer);
