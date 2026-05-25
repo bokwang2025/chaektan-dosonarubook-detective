@@ -635,9 +635,9 @@ export default function Home() {
         <h1 className="title-gradient">책탐정 도서나루</h1>
         <p className="app-tagline">공공데이터를 활용한 어린이·청소년 도서 탐색 서비스</p>
         <p className="subtitle">
-          국제 아동문학상·공신력 있는 기관이 감별한 도서{" "}
-          <strong>{allBooks.length.toLocaleString()}권</strong> 중에서,<br />
-          인기순이 아닌 <strong>엄선된 책</strong>을 주제·감정·상황으로 찾고<br />
+          칼데콧·안데르센 등 국제 아동문학상과 국내 공신력 있는 기관이<br />
+          직접 감별한 도서 <strong>{allBooks.length.toLocaleString()}권</strong> 중에서,<br />
+          인기순이 아닌 <strong>진짜 좋은 책</strong>을 주제·감정·상황으로 찾고<br />
           내 근처 도서관의 <strong>대출 가능 여부</strong>를 바로 확인하세요.
         </p>
 
@@ -649,7 +649,7 @@ export default function Home() {
           <div className="about-panel">
             <div className="about-section">
               <strong>📖 만든 이유</strong>
-              <p>동화구연봉사자로 활동하며 &ldquo;내 주제에 맞는 책을 빠르게 찾고, 줄거리를 파악해서, 가까운 도서관에서 바로 빌릴 수 있으면 얼마나 좋을까&rdquo;라는 고민에서 출발했습니다. 아이에게 좋은 책을 읽어주고 싶지만, <strong>인기도서보다 진짜 감별된 책</strong>을 주고 싶다는 기준 아래, 칼데콧·안데르센 등 세계적 아동문학상 수상작과 국립어린이도서관·서울시교육청 등 공신력 있는 기관의 추천도서만으로 목록을 구성했습니다. 매년 상반기 국제 시상식에 맞춰 업데이트할 예정입니다.</p>
+              <p>동화구연봉사자로 활동하며 아이들에게 좋은 책을 읽어주고 싶다는 마음, 하지만 &ldquo;어떤 책이 진짜 좋은 책인가&rdquo;라는 고민이 늘 있었습니다. 베스트셀러나 인기도서가 아니라, <strong>전문가들이 감별한 책</strong>을 찾고 싶었습니다. 그래서 칼데콧·안데르센 등 세계 권위 있는 아동문학상 수상작과, 국립어린이도서관·서울시교육청 등 공신력 있는 기관이 엄선한 추천도서만으로 목록을 구성했습니다. &ldquo;내 주제에 맞는 책을 빠르게 찾고, 줄거리를 파악해서, 가까운 도서관에서 바로 빌릴 수 있으면&rdquo;이라는 바람도 함께 담았습니다. 매년 국제 시상식이 열리는 <strong>상반기에 업데이트</strong>할 예정입니다.</p>
             </div>
             <div className="about-sources">
               <strong>📚 출처별 특징</strong>
