@@ -262,19 +262,27 @@ export default function Home() {
   }, [filterBooks]);
 
   // ── AI 검색 ────────────────────────────────
-  const handleAiSearch = async (overrideQuery?: string) => {
+  const handleAiSearch = async (
+    overrideQuery?: string,
+    overrideFilters?: { koreanOnly?: boolean; ages?: string[]; sources?: string[] }
+  ) => {
     const q = overrideQuery ?? query;
     if (!q.trim()) return;
     if (overrideQuery) setQuery(overrideQuery);
     setAiMode(true); setAiLoading(true); setAiError("");
 
+    // 필터 override 지원 (필터 해제 후 즉시 재검색 시 state 반영 전 값 보정)
+    const effectiveKoreanOnly = overrideFilters?.koreanOnly  ?? showKoreanOnly;
+    const effectiveAges       = overrideFilters?.ages        ?? selectedAges;
+    const effectiveSources    = overrideFilters?.sources     ?? selectedSources;
+
     try {
       // AI에게 보내는 풀: 현재 활성 필터를 먼저 적용 → 필터 범위 안에서만 추천
       const payload = booksWithIsbn
         .filter((b) => b.tags.length > 0)
-        .filter((b) => !showKoreanOnly || (b.koreanIsbn && b.koreanIsbn.length > 0))
-        .filter((b) => selectedAges.length === 0    || selectedAges.includes(b.targetAge))
-        .filter((b) => selectedSources.length === 0 || selectedSources.includes(b.source))
+        .filter((b) => !effectiveKoreanOnly || (b.koreanIsbn && b.koreanIsbn.length > 0))
+        .filter((b) => effectiveAges.length === 0    || effectiveAges.includes(b.targetAge))
+        .filter((b) => effectiveSources.length === 0 || effectiveSources.includes(b.source))
         .map((b) => ({
           id: b.id,
           title: b.koreanTitle || b.originalTitle,
@@ -827,6 +835,8 @@ export default function Home() {
                       setShowKoreanOnly(false);
                       setSelectedAges([]);
                       setSelectedSources([]);
+                      // state 업데이트 전에 override로 즉시 재검색
+                      handleAiSearch(query, { koreanOnly: false, ages: [], sources: [] });
                     }}>
                     필터 모두 해제하고 다시 검색
                   </button>
