@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, MapPin, Library, BookOpen, Star, Medal,
   Sparkles, X, ChevronDown, Loader2, Info,
 } from "lucide-react";
+import { getRelatedKeywords } from "../lib/smartSearch";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
 import BookCover from "../components/BookCover";
@@ -22,7 +23,9 @@ interface Book {
   aiReason?: string;
 }
 interface LibraryInfo {
+  libCode?: string;
   libName: string; address: string; tel: string; homepage: string;
+  loanUrl?: string | null;
   loanAvailable: boolean; distance?: number;
 }
 
@@ -206,6 +209,7 @@ export default function Home() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showActivityOnly, setShowActivityOnly] = useState(false);
   const [showAbout,        setShowAbout]        = useState(false);
+  const [activeTags,       setActiveTags]       = useState<string[]>([]);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
   const [libLoading,     setLibLoading]     = useState(false);
   const [userLocation,   setUserLocation]   = useState<{lat:number;lng:number}|null>(null);
@@ -213,6 +217,16 @@ export default function Home() {
   const [locationError,  setLocationError]  = useState("");
   const [showAll,        setShowAll]        = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const relatedTags = useMemo(() => {
+    if (!query.trim() || aiMode || searchMode === "ai") return [];
+    const tagCount: Record<string, number> = {};
+    books.forEach((b) => b.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+    const topTags = Object.entries(tagCount)
+      .filter(([t]) => !activeTags.includes(t) && t.toLowerCase() !== query.trim().toLowerCase())
+      .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t]) => t);
+    return getRelatedKeywords(query, topTags).filter((t) => !activeTags.includes(t)).slice(0, 8);
+  }, [query, books, activeTags, aiMode, searchMode]);
 
   // ── 가용 연령 목록 ──────────────────────────
   const availableAges = AGE_ORDER.filter((a) =>
@@ -253,8 +267,15 @@ export default function Home() {
     if (selectedSources.length > 0)
       filtered = filtered.filter((b) => selectedSources.includes(b.source));
 
+    if (activeTags.length > 0)
+      filtered = filtered.filter((b) =>
+        activeTags.every((t) =>
+          b.tags.includes(t) || (b.hook || "").includes(t) || b.koreanTitle.includes(t)
+        )
+      );
+
     setBooks(showAll ? filtered : filtered.slice(0, 60));
-  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll]);
+  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, activeTags]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -315,11 +336,20 @@ export default function Home() {
     }
   };
 
+  const addActiveTag = (tag: string) => {
+    setActiveTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
+    setAiMode(false);
+  };
+  const removeActiveTag = (tag: string) => {
+    setActiveTags((prev) => prev.filter((t) => t !== tag));
+  };
+
   const resetAi = () => { setAiMode(false); setAiEngine(""); setAiError(""); filterBooks(); };
 
   const switchTab = (mode: "keyword" | "ai") => {
     setSearchMode(mode);
     setQuery("");
+    setActiveTags([]);
     setAiMode(false);
     setAiEngine("");
     setAiError("");
@@ -542,7 +572,7 @@ export default function Home() {
                 }}
               />
               {query && (
-                <button className="clear-btn" onClick={() => { setQuery(""); resetAi(); }}>
+                <button className="clear-btn" onClick={() => { setQuery(""); setActiveTags([]); resetAi(); }}>
                   <X size={12} />
                 </button>
               )}
@@ -559,6 +589,36 @@ export default function Home() {
               </button>
             )}
           </div>
+
+          {/* 키워드 탭: 활성 태그 + 연관 태그 */}
+          {searchMode === "keyword" && (
+            <>
+              {activeTags.length > 0 && (
+                <div className="active-tags-row">
+                  <span className="active-tags-label">AND 검색:</span>
+                  {activeTags.map((t) => (
+                    <span key={t} className="active-tag-pill">
+                      #{t}
+                      <button onClick={() => removeActiveTag(t)}><X size={9} /></button>
+                    </span>
+                  ))}
+                  {activeTags.length > 1 && (
+                    <button className="active-tag-clear" onClick={() => setActiveTags([])}>전체 해제</button>
+                  )}
+                </div>
+              )}
+              {relatedTags.length > 0 && (
+                <div className="related-tags-row">
+                  <span className="related-tags-label">관련 주제어</span>
+                  {relatedTags.map((t) => (
+                    <button key={t} className="related-tag-btn" onClick={() => addActiveTag(t)}>
+                      +{t}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
 
           {/* AI 탭: 예시 검색어 */}
           {searchMode === "ai" && !query && (
@@ -785,7 +845,7 @@ export default function Home() {
                   </span>
                 ))}
                 {book.tags.slice(0, 5).map((t, i) => (
-                  <button key={i} className="tag-chip" onClick={() => { setQuery(t); resetAi(); }}>
+                  <button key={i} className="tag-chip" onClick={() => addActiveTag(t)}>
                     #{t}
                   </button>
                 ))}
@@ -999,9 +1059,11 @@ export default function Home() {
                   <div className="lib-dist">📍 {lib.distance.toFixed(1)}km</div>
                 )}
                 {lib.tel && <div className="lib-tel">📞 {lib.tel}</div>}
-                {lib.homepage && (
-                  <a className="lib-link" href={lib.homepage} target="_blank" rel="noopener noreferrer">
-                    홈페이지에서 직접 확인 →
+                {(lib.loanUrl || lib.homepage) && (
+                  <a className="lib-link"
+                    href={lib.loanUrl || lib.homepage}
+                    target="_blank" rel="noopener noreferrer">
+                    {lib.loanUrl ? "이 도서관에서 도서 바로 확인 →" : "홈페이지에서 직접 확인 →"}
                   </a>
                 )}
               </div>

@@ -774,3 +774,46 @@ body {
 .collection-sub {
   font-size: .7rem; color: var(--text-sub);
 }
+
+/* ── 태그 중복검색 UI ───────────────────── */
+.active-tags-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .3rem;
+  padding: .3rem 0 .1rem;
+}
+.active-tags-label {
+  font-size: .68rem; font-weight: 700; color: var(--accent);
+  white-space: nowrap; margin-right: .1rem;
+}
+.active-tag-pill {
+  display: inline-flex; align-items: center; gap: .2rem;
+  background: var(--accent); color: #fff;
+  border-radius: 2rem; padding: .18rem .45rem .18rem .5rem;
+  font-size: .72rem; font-weight: 600;
+}
+.active-tag-pill button {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,.8); padding: 0; line-height: 1;
+  display: flex; align-items: center;
+}
+.active-tag-pill button:hover { color: #fff; }
+.active-tag-clear {
+  font-size: .67rem; color: var(--text-sub); background: none; border: none;
+  cursor: pointer; padding: .1rem .3rem; border-radius: 1rem;
+  border: 1px solid var(--border);
+}
+.active-tag-clear:hover { color: var(--text); }
+
+.related-tags-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .3rem;
+  padding: .25rem 0 .05rem;
+}
+.related-tags-label {
+  font-size: .67rem; color: var(--text-sub); white-space: nowrap;
+}
+.related-tag-btn {
+  font-size: .7rem; color: var(--accent); background: rgba(var(--accent-rgb,5,150,105),.07);
+  border: 1px solid rgba(var(--accent-rgb,5,150,105),.2);
+  border-radius: 2rem; padding: .15rem .45rem;
+  cursor: pointer; transition: background .15s;
+}
+.related-tag-btn:hover { background: rgba(var(--accent-rgb,5,150,105),.15); }

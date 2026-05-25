@@ -145,14 +145,17 @@ export async function GET(req: NextRequest) {
           const result = data?.response?.result ?? {};
           const hasBook   = result.hasBook   ?? "N";
           const loanAvail = result.loanAvailable ?? "N";
+          const loanUrl = (result.loanUrl as string | undefined) || null;
           if (hasBook !== "Y") return null; // 실제 미소장이면 제외
           return {
+            libCode:       lib.libCode,
             libName:       lib.libName,
             address:       lib.address,
             tel:           lib.tel,
             homepage:      lib.homepage,
             distance:      lib.distance,
             loanAvailable: loanAvail === "Y",
+            loanUrl,
           };
         } catch {
           return null;

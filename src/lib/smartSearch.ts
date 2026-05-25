@@ -138,3 +138,23 @@ export function rankByRelevance(query: string, books: BookEntry[]): BookEntry[] 
 
   return [...relevant, ...rest].map((x) => x.book);
 }
+
+/**
+ * 검색어 기반 연관 키워드 반환 (SYNONYM_MAP 활용)
+ * topBookTags: 현재 결과 도서들의 빈도 높은 태그 (추가 제안용)
+ */
+export function getRelatedKeywords(query: string, topBookTags: string[] = []): string[] {
+  const base = query.trim().toLowerCase();
+  if (!base) return [];
+
+  const suggestions = new Set<string>();
+
+  for (const [key, synonyms] of Object.entries(SYNONYM_MAP)) {
+    if (base.includes(key) || synonyms.some((s) => base.includes(s))) {
+      synonyms.forEach((s) => { if (!base.includes(s)) suggestions.add(s); });
+    }
+  }
+  topBookTags.forEach((t) => { if (!base.includes(t)) suggestions.add(t); });
+
+  return [...suggestions].slice(0, 10);
+}
