@@ -716,9 +716,12 @@ body {
   box-shadow: 0 2px 12px rgba(0,0,0,.06);
 }
 .about-section { margin-bottom: .8rem; }
-.about-section strong, .about-sources strong {
+.about-section > strong, .about-sources > strong {
   display: block; font-size: .78rem; font-weight: 700;
   color: var(--text); margin-bottom: .4rem;
+}
+.about-section p strong {
+  display: inline; font-weight: 700; color: var(--text);
 }
 .about-section p {
   font-size: .78rem; color: var(--text-sub); line-height: 1.65; margin: 0;
