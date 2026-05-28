@@ -33,10 +33,23 @@ export default function ReadingActivity({
   const [engine, setEngine] = useState<"claude" | "default" | "">("");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
+  const cacheKey = `reading-activity:${title}`;
+
   const fetchActivities = async () => {
     if (loaded) { setLoaded(false); setActivities([]); return; }
     setLoading(true);
     try {
+      // 캐시 확인
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { activities: cachedActivities, engine: cachedEngine } = JSON.parse(cached);
+        setActivities(cachedActivities || []);
+        setEngine(cachedEngine || "");
+        setLoaded(true);
+        return;
+      }
+
+      // API 호출
       const params = new URLSearchParams({
         title,
         author,
@@ -47,8 +60,17 @@ export default function ReadingActivity({
       });
       const res = await fetch(`/api/reading-activity?${params}`);
       const data = await res.json();
-      setActivities(data.activities || []);
-      setEngine(data.engine || "");
+      const newActivities = data.activities || [];
+      const newEngine = data.engine || "";
+
+      // 캐시 저장
+      localStorage.setItem(cacheKey, JSON.stringify({
+        activities: newActivities,
+        engine: newEngine,
+      }));
+
+      setActivities(newActivities);
+      setEngine(newEngine);
       setLoaded(true);
     } catch (err) {
       console.error("독후활동 불러오기 실패:", err);
