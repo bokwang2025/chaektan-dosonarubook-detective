@@ -10,6 +10,7 @@ import libraryCounts from "../data/library_counts.json";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
 import BookCover from "../components/BookCover";
+import ReadingActivity from "../components/ReadingActivity";
 
 // ─── 타입 ────────────────────────────────────
 interface Book {
@@ -1202,6 +1203,16 @@ export default function Home() {
                 <p className="detail-summary" style={{ color: "#94a3b8" }}>줄거리 정보를 불러오지 못했어요.</p>
               )}
             </div>
+
+            {/* 다중지능 독후활동 */}
+            <ReadingActivity
+              title={detailBook.koreanTitle}
+              author={detailBook.author}
+              summary={summary}
+              tags={detailBook.tags}
+              hook={detailBook.hook}
+              targetAge={detailBook.targetAge}
+            />
 
             {detailBook.activity && detailBook.activity.trim() && (
               <div className="detail-activity-section">

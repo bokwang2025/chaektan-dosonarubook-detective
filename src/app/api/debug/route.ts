@@ -27,10 +27,17 @@ export async function GET() {
   type ParsedType = { response?: { numFound?: string; libs?: unknown[] } };
   const p = parsed as ParsedType;
 
+  const claudeKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
+
   return NextResponse.json({
     env: {
-      LIB_API_KEY: `set (${LIB_API_KEY.slice(0, 6)}...)`,
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? "set" : "NOT SET",
+      LIB_API_KEY: process.env.LIB_API_KEY ? `set (${process.env.LIB_API_KEY.slice(0, 6)}...)` : "NOT SET",
+      CLAUDE_API_KEY: process.env.CLAUDE_API_KEY
+        ? `set (len=${process.env.CLAUDE_API_KEY.length})`
+        : "NOT SET",
+      ANTHROPIC_API_KEY_raw: process.env.ANTHROPIC_API_KEY || "(empty)",
+      effectiveKey: claudeKey ? `set (${claudeKey.slice(0, 15)}... len=${claudeKey.length})` : "NOT SET",
+      cwd: process.cwd(),
     },
     test: {
       url,
