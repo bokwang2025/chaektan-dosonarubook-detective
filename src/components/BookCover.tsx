@@ -163,6 +163,10 @@ export default function BookCover({ isbn, title, source: _source, cachedUrl, ori
           style={{ display: loading ? "none" : "block" }}
           onLoad={() => setLoading(false)}
           onError={handleError}
+          // 브라우저 캐시에 이미 있으면 onLoad가 발동 안 함 → ref로 즉시 체크
+          ref={(node) => {
+            if (node?.complete && node.naturalWidth > 0) setLoading(false);
+          }}
         />
       )}
     </div>
