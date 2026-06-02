@@ -2,7 +2,7 @@
  * Claude API 없이 동작하는 스마트 검색 엔진
  * - 한국어 유의어/연관어 매핑
  * - 태그·훅·제목 가중치 점수 기반 랭킹
- * - 훅 텍스트로 추천 이유 자동 생성
+ * - 관련도 임계값: baseScore < 1 → 제외 (가중치로 관련없는 책 끼어들기 방지)
  */
 
 // ── 유의어 / 연관어 사전 ─────────────────────────────────
@@ -45,61 +45,163 @@ const SYNONYM_MAP: Record<string, string[]> = {
   이사:      ["이사", "전학", "낯선", "새로운"],
   나눔:      ["나눔", "배려", "공유", "함께", "이웃"],
   반려동물:  ["반려동물", "강아지", "고양이", "동물", "펫"],
+
+  // 동물 12종 ─────────────────────────────────────────────
+  토끼:  ["토끼", "래빗", "rabbit", "버니", "bunny", "당근", "knuffle bunny", "피터래빗"],
+  강아지: ["강아지", "개", "puppy", "dog", "멍멍이", "강아지그림책"],
+  고양이: ["고양이", "cat", "냥이", "키티", "kitty", "야옹"],
+  곰:    ["곰", "bear", "곰돌이", "북극곰", "갈색곰", "아기곰", "paddington"],
+  여우:  ["여우", "fox", "여우야여우야"],
+  사자:  ["사자", "lion", "사자왕", "정글"],
+  호랑이: ["호랑이", "tiger", "호랑이그림책"],
+  코끼리: ["코끼리", "elephant", "코끼리그림책"],
+  기린:  ["기린", "giraffe"],
+  말:    ["말", "horse", "망아지", "포니"],
+  돼지:  ["돼지", "pig", "아기돼지", "세마리아기돼지"],
+  새:    ["새", "bird", "오리", "펭귄", "독수리", "참새", "비둘기", "까마귀"],
 };
 
+// ── 직접 검색어 점수 (유의어 확장 없이) ─────────────────────
+/** 원본 검색어만으로 relevance 계산 — 유의어는 보조 점수만 */
+function directScore(book: BookEntry, base: string): number {
+  let score = 0;
+  const titleL = book.title.toLowerCase();
+  const hookL  = (book.hook || "").toLowerCase();
+  const tagsL  = book.tags.map(t => t.toLowerCase());
+
+  if (titleL.includes(base)) score += 10;
+  if (hookL.includes(base))  score += 3;
+  for (const tag of tagsL) {
+    // 태그가 검색어를 포함하거나, 검색어가 태그와 정확히 같을 때만
+    if (tag.includes(base) || base === tag) score += 5;
+  }
+  return score;
+}
+
+/** 유의어 확장 보조 점수 */
+function synonymScore(book: BookEntry, keywords: string[], base: string): number {
+  let score = 0;
+  const titleL = book.title.toLowerCase();
+  const hookL  = (book.hook || "").toLowerCase();
+  const tagsL  = book.tags.map(t => t.toLowerCase());
+
+  for (const kw of keywords) {
+    if (kw === base) continue; // 직접 점수에서 이미 처리
+    if (titleL.includes(kw)) score += 4;
+    if (hookL.includes(kw))  score += 2;
+    for (const tag of tagsL) {
+      if (tag.includes(kw) || kw === tag) score += 3;
+    }
+  }
+  return score;
+}
+
 // ── 책 점수 계산 ─────────────────────────────────────────
-interface BookEntry {
+export interface AwardEntry {
+  name: string;
+  year?: string;
+  category?: string;
+}
+
+export interface BookEntry {
   id: string;
   title: string;
   tags: string[];
   hook: string;
   age?: string;
   source?: string;
+  isbn?: string;
+  // 가중치 필드
+  awards?: AwardEntry[];
+  awardCount?: number;
+  sources?: string[];
+  libraryCount?: number;
 }
 
-function getKeywords(query: string): string[] {
+// ── 가중치 3종 ───────────────────────────────────────────
+const TOTAL_LIBRARIES = 1599;
+
+/** W1: 국제 수상만 카운트 */
+const INTL_AWARD_NAMES = new Set([
+  '칼데콧', '안데르센상', '볼로냐라가치상', '뉴베리상', '카네기상', '케이트 그린어웨이상',
+]);
+
+export function countIntlAwards(book: BookEntry): number {
+  if (!book.awards) return 0;
+  return book.awards.filter(a => INTL_AWARD_NAMES.has(a.name)).length;
+}
+
+function awardWeight(book: BookEntry): number {
+  const count = countIntlAwards(book);
+  if (count >= 2) return 2.0;
+  if (count === 1) return 1.5;
+  return 1.0;
+}
+
+/** W2: 사서 추천 기관 수 가중치 */
+function recommendationWeight(book: BookEntry): number {
+  const sources = book.sources?.length ?? 0;
+  if (sources >= 4) return 1.6;
+  if (sources >= 3) return 1.4;
+  if (sources === 2) return 1.2;
+  if (sources === 1) return 1.1;
+  return 1.0;
+}
+
+/** W3: 도서관 보유율 가중치 */
+function libraryCountWeight(book: BookEntry): number {
+  const count = book.libraryCount ?? 0;
+  if (count === 0) return 1.0;
+  const ratio = count / TOTAL_LIBRARIES;
+  if (ratio >= 0.90) return 1.5;
+  if (ratio >= 0.70) return 1.3;
+  if (ratio >= 0.50) return 1.15;
+  if (ratio >= 0.20) return 1.05;
+  return 1.0;
+}
+
+export function calcWeight(book: BookEntry): number {
+  return awardWeight(book) * recommendationWeight(book) * libraryCountWeight(book);
+}
+
+export function getKeywords(query: string): string[] {
   const base = query.trim().toLowerCase();
   const expanded = new Set<string>([base]);
 
-  // 유의어 확장
   for (const [key, synonyms] of Object.entries(SYNONYM_MAP)) {
-    if (base.includes(key) || synonyms.some((s) => base.includes(s))) {
-      synonyms.forEach((s) => expanded.add(s));
+    if (base.includes(key) || synonyms.some(s => base.includes(s))) {
+      synonyms.forEach(s => expanded.add(s));
       expanded.add(key);
     }
   }
   return [...expanded];
 }
 
-function scoreBook(book: BookEntry, keywords: string[]): number {
-  let score = 0;
-  const titleLower = book.title.toLowerCase();
-  const hookLower  = (book.hook || "").toLowerCase();
-  const tagsLower  = book.tags.map((t) => t.toLowerCase());
+/**
+ * 관련도 점수: 직접 매칭(가중치 높음) + 유의어 보조(가중치 낮음)
+ * baseScore = 0 이면 가중치 무관 제외 대상
+ */
+function scoreBook(book: BookEntry, keywords: string[], base: string): { relevance: number; total: number } {
+  const direct  = directScore(book, base);
+  const synonym = synonymScore(book, keywords, base);
+  const relevance = direct + synonym * 0.4; // 유의어는 40% 보조
 
-  for (const kw of keywords) {
-    // 제목 일치 (높은 가중치)
-    if (titleLower.includes(kw)) score += 10;
-    // 태그 일치
-    for (const tag of tagsLower) {
-      if (tag.includes(kw) || kw.includes(tag)) score += 5;
-    }
-    // 훅 일치
-    if (hookLower.includes(kw)) score += 3;
-  }
-  return score;
+  if (relevance < 1) return { relevance: 0, total: 0 };
+
+  const total = relevance * calcWeight(book);
+  return { relevance, total };
 }
 
 // ── 추천 이유 생성 ────────────────────────────────────────
 function buildReason(book: BookEntry, query: string): string {
   if (book.hook) return book.hook;
 
-  const matchedTags = book.tags.filter((t) =>
-    query.split(/\s+/).some((q) => t.includes(q) || q.includes(t))
+  const matchedTags = book.tags.filter(t =>
+    query.split(/\s+/).some(q => t.includes(q) || q.includes(t))
   );
 
   if (matchedTags.length > 0) {
-    return `"${query}" 주제와 관련된 ${matchedTags.slice(0, 3).map((t) => `#${t}`).join(" ")} 태그를 가진 책이에요.`;
+    return `"${query}" 주제와 관련된 ${matchedTags.slice(0, 3).map(t => `#${t}`).join(" ")} 태그를 가진 책이에요.`;
   }
   return `"${query}"를 탐색하는 어린이에게 어울리는 책이에요.`;
 }
@@ -111,12 +213,13 @@ export interface SmartResult {
 }
 
 export function smartSearch(query: string, books: BookEntry[]): SmartResult[] {
+  const base     = query.trim().toLowerCase();
   const keywords = getKeywords(query);
 
   const scored = books
-    .map((b) => ({ book: b, score: scoreBook(b, keywords) }))
-    .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score)
+    .map(b => ({ book: b, ...scoreBook(b, keywords, base) }))
+    .filter(x => x.relevance >= 1)  // 관련도 임계값
+    .sort((a, b) => b.total - a.total)
     .slice(0, 10);
 
   return scored.map(({ book }) => ({
@@ -126,22 +229,24 @@ export function smartSearch(query: string, books: BookEntry[]): SmartResult[] {
 }
 
 /**
- * 관련도 순으로 전체 도서를 정렬하여 반환 (Claude 전달용 사전 필터링)
- * 점수 > 0인 책은 앞에, 나머지는 뒤에 붙임
+ * 관련도 순 정렬 (Claude 전달용 사전 필터링)
+ * 관련도 0인 책 제외 후 관련 책만 반환
  */
 export function rankByRelevance(query: string, books: BookEntry[]): BookEntry[] {
+  const base     = query.trim().toLowerCase();
   const keywords = getKeywords(query);
 
-  const withScore = books.map((b) => ({ book: b, score: scoreBook(b, keywords) }));
-  const relevant  = withScore.filter((x) => x.score > 0).sort((a, b) => b.score - a.score);
-  const rest      = withScore.filter((x) => x.score === 0);
+  const withScore = books
+    .map(b => ({ book: b, ...scoreBook(b, keywords, base) }))
+    .filter(x => x.relevance >= 1);
 
-  return [...relevant, ...rest].map((x) => x.book);
+  return withScore
+    .sort((a, b) => b.total - a.total)
+    .map(x => x.book);
 }
 
 /**
- * 검색어 기반 연관 키워드 반환 (SYNONYM_MAP 활용)
- * topBookTags: 현재 결과 도서들의 빈도 높은 태그 (추가 제안용)
+ * 검색어 기반 연관 키워드 반환
  */
 export function getRelatedKeywords(query: string, topBookTags: string[] = []): string[] {
   const base = query.trim().toLowerCase();
@@ -150,11 +255,21 @@ export function getRelatedKeywords(query: string, topBookTags: string[] = []): s
   const suggestions = new Set<string>();
 
   for (const [key, synonyms] of Object.entries(SYNONYM_MAP)) {
-    if (base.includes(key) || synonyms.some((s) => base.includes(s))) {
-      synonyms.forEach((s) => { if (!base.includes(s)) suggestions.add(s); });
+    if (base.includes(key) || synonyms.some(s => base.includes(s))) {
+      synonyms.forEach(s => { if (!base.includes(s)) suggestions.add(s); });
     }
   }
-  topBookTags.forEach((t) => { if (!base.includes(t)) suggestions.add(t); });
+  topBookTags.forEach(t => { if (!base.includes(t)) suggestions.add(t); });
 
   return [...suggestions].slice(0, 10);
+}
+
+/**
+ * page.tsx filterBooks용: 관련도 점수만 반환 (가중치 별도 곱셈용)
+ * relevance=0 → 결과에서 제외해야 함
+ */
+export function calcRelevance(query: string, book: BookEntry): number {
+  const base     = query.trim().toLowerCase();
+  const keywords = getKeywords(query);
+  return scoreBook(book, keywords, base).relevance;
 }

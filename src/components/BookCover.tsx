@@ -14,12 +14,11 @@ function isKoreanIsbn(isbn: string) {
   return isbn.startsWith("9788") || isbn.startsWith("9791");
 }
 
-// Kakao CDN URL → 직접 스토리지 URL 추출
-// https://search1.kakaocdn.net/...?fname=https%3A%2F%2Ft1.kakaocdn.net%2F...
-function extractKakaoDirectUrl(url: string): string {
+// Kakao CDN URL을 더 큰 사이즈로 교체 (R120x174 → R300x0 = 가로 300px 비율유지)
+function upgradeKakaoThumb(url: string): string {
   try {
-    const fname = new URL(url).searchParams.get("fname");
-    return fname ? decodeURIComponent(fname) : url;
+    // search1.kakaocdn.net CDN URL의 사이즈 파라미터 확대
+    return url.replace(/\/R\d+x\d+\.q\d+\//, "/R300x0.q85/");
   } catch {
     return url;
   }
@@ -84,10 +83,10 @@ export default function BookCover({ isbn, title, source: _source, cachedUrl, ori
 
     async function loadCover() {
       if (isKoreanIsbn(isbn)) {
-        // ① 사전확인된 Kakao URL → t1.kakaocdn.net 직접 URL 추출
+        // ① 사전확인된 Kakao CDN URL (사이즈 업그레이드)
         if (cachedUrl) {
-          const direct = extractKakaoDirectUrl(cachedUrl);
-          if (!cancelled) { setSrc(direct); return; }
+          const upgraded = upgradeKakaoThumb(cachedUrl);
+          if (!cancelled) { setSrc(upgraded); return; }
         }
         // ② Kakao API 조회
         const url = await fetchKakaoUrl(isbn);
