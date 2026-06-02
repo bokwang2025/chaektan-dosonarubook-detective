@@ -136,6 +136,30 @@ const COLOR_THEMES: Record<string, {
   },
 };
 
+// ─── 배지 레이블 압축 ───────────────────────────────────────
+/**
+ * sourceLabel을 카드 배지용으로 압축
+ * "칼데콧 Winner (2026) · 원서추천" → "칼데콧 Winner 2026"
+ * "볼로냐 Winner (sustainability special category) (2025) · 원서추천" → "볼로냐 Winner 2025"
+ * "안데르센 글 작가 (2026)" → "안데르센 글작가 2026"
+ */
+function compactLabel(sourceLabel: string, awardYear?: string): string {
+  if (!sourceLabel) return "";
+  // "· 원서추천" 제거
+  let s = sourceLabel.replace(/\s*·\s*원서추천.*$/, "").trim();
+  // 연도 추출 (마지막 괄호 연도 우선)
+  const yearMatch = s.match(/\((\d{4})\)(?:\s*\(\d{4}\))*\s*$/);
+  const year = yearMatch?.[1] || awardYear || "";
+  // 모든 괄호 내용 제거
+  s = s.replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+  // Winner/Honor/Shortlist/Mention/글 작가/그림 작가 이후 긴 텍스트 제거
+  const statusMatch = s.match(/^(\S+(?:\s+\S+)?)\s+(Winner|Honor|Shortlist|Mention|Nominee|글\s*작가|그림\s*작가)/i);
+  if (statusMatch) {
+    s = `${statusMatch[1]} ${statusMatch[2].replace(/\s+/g, "")}`;
+  }
+  return year ? `${s} ${year}` : s;
+}
+
 // ─── W1: 국제 수상 이름 집합 ──────────────────────────────
 const INTL_AWARD_NAMES = new Set([
   '칼데콧', '안데르센상', '볼로냐라가치상', '뉴베리상', '카네기상', '케이트 그린어웨이상',
@@ -1027,10 +1051,7 @@ export default function Home() {
                       : isAward
                       ? <Medal size={11} />
                       : <BookOpen size={11} />}
-                    {book.sourceLabel}
-                    {book.awardYear && (
-                      <span className="award-year-inline">{book.awardYear}</span>
-                    )}
+                    {compactLabel(book.sourceLabel, book.awardYear)}
                   </div>
                   {extraSources.map((src) => {
                     const cfg = SOURCE_CONFIG[src];
