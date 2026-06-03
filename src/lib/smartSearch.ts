@@ -5,6 +5,8 @@
  * - 관련도 임계값: baseScore < 1 → 제외 (가중치로 관련없는 책 끼어들기 방지)
  */
 
+import libraryRank from "../data/library_rank.json";
+
 // ── 유의어 / 연관어 사전 ─────────────────────────────────
 const SYNONYM_MAP: Record<string, string[]> = {
   // 감정
@@ -111,6 +113,7 @@ export interface BookEntry {
   age?: string;
   source?: string;
   isbn?: string;
+  koreanIsbn?: string;
   // 가중치 필드
   awards?: AwardEntry[];
   awardCount?: number;
@@ -118,50 +121,72 @@ export interface BookEntry {
   libraryCount?: number;
 }
 
-// ── 가중치 3종 ───────────────────────────────────────────
-const TOTAL_LIBRARIES = 1599;
+// ── 가중치 3종 (중앙화) ───────────────────────────────────
+const LIB_RANK = libraryRank as Record<string, { count: number; pct: number }>;
 
-/** W1: 국제 수상만 카운트 */
-const INTL_AWARD_NAMES = new Set([
+/** 국제 수상 이름 집합 (W1) */
+export const INTL_AWARD_NAMES = new Set([
   '칼데콧', '안데르센상', '볼로냐라가치상', '뉴베리상', '카네기상', '케이트 그린어웨이상',
 ]);
+/** 국제 수상처(출처) 집합 — W2에서 제외 */
+export const AWARD_SOURCES = new Set([
+  '칼데콧', '안데르센', '볼로냐', '뉴베리', '카네기', '그린어웨이',
+]);
 
-export function countIntlAwards(book: BookEntry): number {
+type WeightLike = {
+  awards?: { name: string }[];
+  sources?: string[];
+  koreanIsbn?: string;
+  isbn?: string;
+};
+
+/** 국제 수상 개수 */
+export function countIntlAwards(book: WeightLike): number {
   if (!book.awards) return 0;
   return book.awards.filter(a => INTL_AWARD_NAMES.has(a.name)).length;
 }
 
-function awardWeight(book: BookEntry): number {
-  const count = countIntlAwards(book);
-  if (count >= 2) return 2.0;
-  if (count === 1) return 1.5;
+/** W2용: 수상처를 제외한 사서·교육기관 추천 기관 수 */
+export function recommendationCount(book: WeightLike): number {
+  return (book.sources ?? []).filter(s => !AWARD_SOURCES.has(s)).length;
+}
+
+/** 도서관 보유 순위 조회 (없으면 null) — { count, pct(전국 보유 상위 %) } */
+export function getLibRank(book: WeightLike): { count: number; pct: number } | null {
+  return LIB_RANK[book.koreanIsbn ?? ""] ?? LIB_RANK[book.isbn ?? ""] ?? null;
+}
+
+/** W1: 국제 수상 단계화 (1관 1.3 / 2관 1.6 / 3관+ 2.0) */
+export function awardWeight(book: WeightLike): number {
+  const c = countIntlAwards(book);
+  if (c >= 3) return 2.0;
+  if (c === 2) return 1.6;
+  if (c === 1) return 1.3;
   return 1.0;
 }
 
-/** W2: 사서 추천 기관 수 가중치 */
-function recommendationWeight(book: BookEntry): number {
-  const sources = book.sources?.length ?? 0;
-  if (sources >= 4) return 1.6;
-  if (sources >= 3) return 1.4;
-  if (sources === 2) return 1.2;
-  if (sources === 1) return 1.1;
+/** W2: 사서·교육기관 추천 누적 (수상처 제외) */
+export function recommendationWeight(book: WeightLike): number {
+  const n = recommendationCount(book);
+  if (n >= 4) return 1.6;
+  if (n >= 3) return 1.4;
+  if (n === 2) return 1.2;
+  if (n === 1) return 1.1;
   return 1.0;
 }
 
-/** W3: 도서관 보유율 가중치 */
-function libraryCountWeight(book: BookEntry): number {
-  const count = book.libraryCount ?? 0;
-  if (count === 0) return 1.0;
-  const ratio = count / TOTAL_LIBRARIES;
-  if (ratio >= 0.90) return 1.5;
-  if (ratio >= 0.70) return 1.3;
-  if (ratio >= 0.50) return 1.15;
-  if (ratio >= 0.20) return 1.05;
+/** W3: 도서관 보유율 백분위 (상위 5% 1.3 / 15% 1.2 / 35% 1.1) */
+export function libraryWeight(book: WeightLike): number {
+  const r = getLibRank(book);
+  if (!r) return 1.0;
+  if (r.pct <= 5) return 1.3;
+  if (r.pct <= 15) return 1.2;
+  if (r.pct <= 35) return 1.1;
   return 1.0;
 }
 
-export function calcWeight(book: BookEntry): number {
-  return awardWeight(book) * recommendationWeight(book) * libraryCountWeight(book);
+export function calcWeight(book: WeightLike): number {
+  return awardWeight(book) * recommendationWeight(book) * libraryWeight(book);
 }
 
 export function getKeywords(query: string): string[] {

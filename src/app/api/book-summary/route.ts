@@ -82,19 +82,20 @@ async function summarizeWithClaude(params: {
 }): Promise<{ text: string; isEstimate: boolean } | null> {
   try {
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY });
 
     const hasRealContent = !!(params.kakaoContents || params.amazonDesc || params.notice);
     const isEstimate = params.isForeign && !hasRealContent;
 
     const contextLines: string[] = [];
     if (params.kakaoContents) {
-      contextLines.push(`[출판사 소개글 참고]\n${params.kakaoContents}`);
+      contextLines.push(`[출판사 소개글 — 마케팅·수상·저자 칭찬이 섞여 있으니 줄거리(사건·전개)만 추출]\n${params.kakaoContents}`);
     }
     if (params.amazonDesc) {
       contextLines.push(`[Amazon 원서 소개글 — 가장 중요, 이 내용을 기반으로 줄거리를 써줘]\n${params.amazonDesc}`);
     }
-    if (params.notice) contextLines.push(`[도서관 소개글 참고]\n${params.notice}`);
+    // notice는 kakaoContents와 거의 동일(마케팅 원문)이라 중복 입력 방지
+    if (params.notice && !params.kakaoContents) contextLines.push(`[참고 소개글 — 마케팅 포함 가능, 줄거리만 추출]\n${params.notice}`);
     if (params.hook) contextLines.push(`[줄거리 힌트] ${params.hook}`);
     if (params.tags) contextLines.push(`[주제 태그] ${params.tags}`);
 
@@ -102,20 +103,19 @@ async function summarizeWithClaude(params: {
       ? "\n주의: 소개글이 없어 제목·정보만으로 추정하는 내용입니다."
       : "";
 
-    const prompt = `다음 정보를 바탕으로 책의 줄거리를 3문장으로 요약해줘.${estimateNote}
+    const prompt = `아래 참고 자료를 바탕으로 이 책의 "이야기 줄거리"만 3문장으로 써줘.${estimateNote}
 
-규칙:
-- 소개글이 영어여도 반드시 한국어로 번역해서 줄거리를 써줘
-- 책의 이야기·내용 중심으로 써줘 (홍보문구·수상정보 나열 제외)
-- 문장은 완성된 형태로 끝내줘
-- 어린이·학부모·교사가 읽기 쉽게, 따뜻하고 간결하게
-- 한국어로만 답하고, 다른 설명 없이 줄거리만 작성
-- 절대로 책 제목이나 "제목:" 같은 말로 시작하지 말고, 바로 이야기 내용으로 시작해줘
+[반드시 지킬 것]
+- 오직 이야기(등장인물·사건·전개) 내용만 써라. 줄거리가 아닌 문장은 모두 버려라.
+- 책 제목, 저자 이름, 출판사, 수상 이력(○○상 수상작 등), 작가 소개·칭찬, 홍보·추천 문구는 절대 쓰지 마라.
+- "이 책은", "○○ 작가의", "○○상 수상작인" 같은 표현으로 시작하거나 언급하지 마라. 바로 이야기로 시작하라.
+- 참고 소개글에 마케팅·수상·저자 칭찬이 섞여 있으면 그 부분은 무시하고 실제 줄거리만 뽑아내라.
+- 영어 자료는 한국어로 옮겨 써라.
+- 모든 문장은 완성된 형태로 끝맺어라. 어린이·학부모·교사가 읽기 쉽게 따뜻하고 간결하게.
+- 한국어 줄거리 문장만 출력하고 그 외의 말은 붙이지 마라.
+${params.targetAge ? `(대상 연령: ${params.targetAge})` : ""}
 
-제목: ${params.title}
-저자: ${params.author}
-${params.awardName ? `수상: ${params.awardName}` : ""}
-${params.targetAge ? `대상 연령: ${params.targetAge}` : ""}
+[참고 자료]
 ${contextLines.join("\n")}`;
 
     const message = await client.messages.create({
@@ -129,6 +129,26 @@ ${contextLines.join("\n")}`;
   } catch {
     return null;
   }
+}
+
+/**
+ * 생성된 줄거리 사후 필터 — 모델이 규칙을 어겨도 메타/홍보 문장을 제거하는 안전장치
+ * 제목·저자·수상·홍보·"이 책은" 등이 들어간 문장을 통째로 버리고 줄거리 문장만 남김
+ */
+function sanitizeSummary(text: string, title: string, author: string): string {
+  const META = /(수상작|수상 작가|수상에 빛|후보작|베스트셀러|스테디셀러|화제작|화제의|강력 ?추천|출간되었|출간!|펴낸|펴낸이|옮긴이|글쓴이|지은이|그린이|데뷔작|대표작|신작|이 책은|이 그림책|독자라면|작가의|작가가|평론|에디터)/;
+  const authorTokens = (author || "").split(/[\s;,·/]+/).filter((t) => t.length >= 2);
+  const sents = (text.match(/[^.!?。…\n]+[.!?。…]?/g) || []).map((x) => x.trim()).filter(Boolean);
+  const kept = sents.filter((sen) => {
+    if (META.test(sen)) return false;
+    if (title && title.length >= 2 && sen.includes(title)) return false;
+    if (authorTokens.some((t) => sen.includes(t))) return false;
+    return true;
+  });
+  const out = kept.join(" ").trim();
+  if (out.length >= 20) return out;
+  // 과도 제거 방지: 선두 메타 1문장만 제거하고 원문 유지
+  return text.replace(/^\s*[^.!?。…]*?(수상작|작가의|이 책은|베스트셀러|출간)[^.!?。…]*[.!?。…]\s*/, "").trim() || text;
 }
 
 export async function GET(req: NextRequest) {
@@ -165,19 +185,23 @@ export async function GET(req: NextRequest) {
 
   if (result) {
     return NextResponse.json({
-      summary: result.text,
+      summary: sanitizeSummary(result.text, title, author),
       isEstimate: result.isEstimate,
       source: kakaoContents ? "kakao+claude" : amazonDesc ? "amazon+claude" : "claude",
     });
   }
 
-  // 4. Claude 실패 시 — 카카오/Amazon 내용 그대로
+  // 4. Claude 실패 시 — 원문에서 홍보·수상·저자 문장을 걷어내고 줄거리 문장만
   const rawContent = kakaoContents || amazonDesc;
   if (rawContent) {
-    const sentences = rawContent.match(/[^.!?…]*[.!?…]?/g) || [];
-    const complete = sentences.filter(s => s.trim().length > 5).join("").trim();
-    const clean = complete.replace(/[^.!?。]*$/, "").trim() || complete;
-    return NextResponse.json({ summary: clean || rawContent, source: "raw" });
+    const META = /(수상|수상작|작가|베스트셀러|스테디셀러|추천|화제|출간|펴낸|옮긴이|글쓴이|지은이|그린이|작품이다$|그림책입니다$|동화입니다$)/;
+    const sents = (rawContent.match(/[^.!?…]+[.!?…]?/g) || [])
+      .map((x) => x.trim())
+      .filter((x) => x.length > 5 && !META.test(x) && !x.startsWith("이 책은"));
+    const clean = sents.join(" ").replace(/[^.!?。…]*$/, "").trim();
+    if (clean.length > 20) {
+      return NextResponse.json({ summary: clean, source: "raw-cleaned" });
+    }
   }
 
   return NextResponse.json({ summary: null });

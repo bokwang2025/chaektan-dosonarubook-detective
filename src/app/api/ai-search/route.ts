@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { smartSearch, rankByRelevance, calcWeight, BookEntry } from "@/lib/smartSearch";
-import libraryCounts from "@/data/library_counts.json";
-
-// library_counts.json: { [isbn]: count }
-const LC = libraryCounts as Record<string, number>;
-
-/** books 페이로드에 libraryCount 주입 */
-function injectLibraryCount(books: BookEntry[]): BookEntry[] {
-  return books.map((b) => ({
-    ...b,
-    libraryCount: LC[b.isbn ?? ""] ?? 0,
-  }));
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,8 +8,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "검색어가 필요합니다." }, { status: 400 });
     }
 
-    // libraryCount 주입
-    const books = injectLibraryCount(rawBooks as BookEntry[]);
+    // 가중치(W3)는 koreanIsbn/isbn 기반 보유 순위로 내부 계산됨
+    const books = rawBooks as BookEntry[];
 
     // ── 1. Claude API 시도 ─────────────────────────────
     const apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;

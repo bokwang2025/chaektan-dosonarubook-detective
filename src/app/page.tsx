@@ -5,7 +5,7 @@ import {
   Search, MapPin, Library, BookOpen, Star, Medal,
   Sparkles, X, ChevronDown, Loader2, Info,
 } from "lucide-react";
-import { getRelatedKeywords, calcRelevance, rankByRelevance } from "../lib/smartSearch";
+import { getRelatedKeywords, calcRelevance, rankByRelevance, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank } from "../lib/smartSearch";
 import libraryCounts from "../data/library_counts.json";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
@@ -79,7 +79,7 @@ const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeCla
   "칼데콧":          { label: "🏅 칼데콧",        chipClass: "active-gold",    badgeClass: "badge-caldecott", desc: "미국 최고 그림책 일러스트레이터상. 매년 ALA가 미국 아동 그림책 작가에게 수여. 세계적으로 인정받는 그림책이 많습니다." },
   "안데르센":        { label: "🌟 안데르센",       chipClass: "active-teal",    badgeClass: "badge-andersen",  desc: "세계 아동문학의 노벨상. 글작가·그림작가 부문으로 나뉘어 2년마다 수상. 전 세계 우수 아동도서 작가를 선정합니다." },
   "볼로냐":          { label: "🎨 볼로냐",         chipClass: "active-orange",  badgeClass: "badge-bologna",   desc: "이탈리아 볼로냐 국제아동도서전 최우수상. Fiction·Non-fiction·Comics·New Horizons 등 부문별 수상. 예술성 높은 그림책이 많습니다." },
-  "카네기":          { label: "📖 카네기",         chipClass: "active-purple",  badgeClass: "badge-carnegie",  desc: "영국 최고 권위의 아동문학상. 어린이·청소년 소설 중심이며 Illustration 부문도 있습니다." },
+  "카네기":          { label: "📖 카네기",         chipClass: "active-purple",  badgeClass: "badge-carnegie",  desc: "영국 최고 권위의 아동문학상(요토 카네기). 일러스트레이션 부문(옛 케이트 그린어웨이상) 수상작을 포함합니다." },
   "국립어린이도서관": { label: "📚 국립어린이도서관", chipClass: "active-green",   badgeClass: "badge-national",  desc: "국립어린이청소년도서관 사서 추천도서. 어린이·청소년 대상 균형 잡힌 독서 목록입니다." },
   "서울시교육청":    { label: "🏫 서울시교육청",    chipClass: "active",         badgeClass: "badge-edu",       desc: "서울시교육청 교사 추천 도서. 유아~청소년 전 연령 포괄하며 문학·사회·과학 분야가 고루 포함됩니다." },
   "서울어린이도서관": { label: "🌸 서울어린이도서관", chipClass: "active-pink",    badgeClass: "badge-seoul",     desc: "서울어린이도서관협의회 테마 추천 도서. 이웃·가족 등 생활 주제 중심으로 선정한 그림책·동화가 많습니다." },
@@ -160,15 +160,7 @@ function compactLabel(sourceLabel: string, awardYear?: string): string {
   return year ? `${s} ${year}` : s;
 }
 
-// ─── W1: 국제 수상 이름 집합 ──────────────────────────────
-const INTL_AWARD_NAMES = new Set([
-  '칼데콧', '안데르센상', '볼로냐라가치상', '뉴베리상', '카네기상', '케이트 그린어웨이상',
-]);
-
-/** W1용: 책의 국제 수상 개수 */
-function intlCount(book: Book): number {
-  return (book.awards || []).filter(a => INTL_AWARD_NAMES.has(a.name)).length;
-}
+// ─── W1용: 국제 수상 개수 (smartSearch 중앙 함수 재사용) ─────
 
 // ─── 초기 표시용: 표지 확인된 책만, 출처 다양 + 중복수상 최우선 ──────────
 const CONFIRMED_COVERS = confirmedCoversData as Record<string, {
@@ -177,23 +169,9 @@ const CONFIRMED_COVERS = confirmedCoversData as Record<string, {
 
 /** 가중치(W1×W2×W3) 기준 내림차순 정렬된 초기 도서 목록 */
 function buildInitialBooks(): Book[] {
-  const lc = libraryCounts as Record<string, number>;
-  const TOTAL = 1599;
-
-  function calcW(b: Book): number {
-    const aw  = intlCount(b);
-    const src = b.sources?.length ?? 0;
-    const cnt = lc[b.koreanIsbn] ?? 0;
-    const r   = cnt / TOTAL;
-    const w1  = aw >= 2 ? 2.0 : aw === 1 ? 1.5 : 1.0;
-    const w2  = src >= 4 ? 1.6 : src >= 3 ? 1.4 : src === 2 ? 1.2 : src === 1 ? 1.1 : 1.0;
-    const w3  = r >= 0.9 ? 1.5 : r >= 0.7 ? 1.3 : r >= 0.5 ? 1.15 : r >= 0.2 ? 1.05 : 1.0;
-    return w1 * w2 * w3;
-  }
-
   return [...allBooks]
     .filter((b) => b.koreanIsbn)
-    .sort((a, b) => calcW(b) - calcW(a));
+    .sort((a, b) => calcWeight(b) - calcWeight(a));
 }
 
 const INITIAL_BOOKS = buildInitialBooks();
@@ -233,8 +211,6 @@ export default function Home() {
   const [summaryIsEstimate, setSummaryIsEstimate] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showActivityOnly, setShowActivityOnly] = useState(false); // 내부 로직용 유지
-  const [showMultiOnly,    setShowMultiOnly]    = useState(false); // 다중수상만 보기
-  const [showRecentOnly,   setShowRecentOnly]   = useState(false); // 최근 1년 신간
   const [showAbout,        setShowAbout]        = useState(false);
   const [activeTags,       setActiveTags]       = useState<string[]>([]);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
@@ -270,7 +246,7 @@ export default function Home() {
   const filterBooks = useCallback(() => {
     if (aiMode) return;
 
-    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || showMultiOnly || showRecentOnly || activeTags.length > 0 || sortModes.length > 0;
+    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || activeTags.length > 0 || sortModes.length > 0;
 
     // 아무 필터·검색어도 없으면 가중치 정렬 전체 목록 (더보기로 확장)
     if (!hasFilter) {
@@ -308,13 +284,10 @@ export default function Home() {
     if (selectedAges.length > 0)
       filtered = filtered.filter((b) => selectedAges.includes(b.targetAge));
     if (selectedSources.length > 0)
-      filtered = filtered.filter((b) => selectedSources.includes(b.source));
-    if (showMultiOnly)
-      filtered = filtered.filter((b) => intlCount(b) >= 1);
-    if (showRecentOnly) {
-      const thisYear = new Date().getFullYear();
-      filtered = filtered.filter((b) => parseInt(b.publishedYear || "0") >= thisYear - 1);
-    }
+      filtered = filtered.filter((b) =>
+        selectedSources.includes(b.source) ||
+        (selectedSources.includes("카네기") && b.source === "그린어웨이")
+      );
 
     if (activeTags.length > 0)
       filtered = filtered.filter((b) =>
@@ -325,19 +298,12 @@ export default function Home() {
 
     // H: 검색어 있을 때 항상 관련도×가중치 정렬 → sortModes는 2차 기준
     const counts = libraryCounts as Record<string, number>;
-    const TOTAL_LIB = 1599;
 
     const weightedScore = (book: Book): number => {
-      const bookEntry = { id: book.id, title: book.koreanTitle || book.originalTitle, tags: book.tags, hook: book.hook || "", awards: book.awards, sources: book.sources };
+      const bookEntry = { id: book.id, title: book.koreanTitle || book.originalTitle, tags: book.tags, hook: book.hook || "", awards: book.awards, sources: book.sources, koreanIsbn: book.koreanIsbn, isbn: book.isbn };
       const rel = query.trim() ? calcRelevance(query, bookEntry) : 1;
       if (rel === 0) return 0;
-      const aw    = intlCount(book);
-      const w1    = aw >= 2 ? 2.0 : aw === 1 ? 1.5 : 1.0;
-      const srcLen = book.sources?.length ?? 0;
-      const w2    = srcLen >= 4 ? 1.6 : srcLen >= 3 ? 1.4 : srcLen === 2 ? 1.2 : srcLen === 1 ? 1.1 : 1.0;
-      const libCnt = counts[book.koreanIsbn] ?? 0;
-      const w3    = (() => { const r = libCnt / TOTAL_LIB; return r >= 0.9 ? 1.5 : r >= 0.7 ? 1.3 : r >= 0.5 ? 1.15 : r >= 0.2 ? 1.05 : 1.0; })();
-      return rel * w1 * w2 * w3;
+      return rel * calcWeight(book);
     };
 
     if (sortModes.length > 0) {
@@ -366,12 +332,13 @@ export default function Home() {
         }
         return 0;
       });
-    } else if (query.trim()) {
+    } else {
+      // 정렬 미선택 시에도 항상 가중치 기준 정렬 (컬렉션/태그/연령만 골라도 동일 기준)
       filtered = [...filtered].sort((a, b) => weightedScore(b) - weightedScore(a));
     }
 
     setBooks(showAll ? filtered : filtered.slice(0, 60));
-  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, showMultiOnly, showRecentOnly, aiMode, showAll, activeTags, sortModes]); // showAll 포함 — 기본 화면 더보기 지원
+  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, activeTags, sortModes]); // showAll 포함 — 기본 화면 더보기 지원
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -402,6 +369,7 @@ export default function Home() {
       const localEntries = localPool.map((b) => ({
         id: b.id, title: b.koreanTitle || b.originalTitle,
         tags: b.tags, hook: b.hook || "", awards: b.awards, sources: b.sources,
+        koreanIsbn: b.koreanIsbn, isbn: b.isbn,
       }));
       // 관련도 있는 책 상위 60권 즉시 표시
       const preRanked = rankByRelevance(q, localEntries).slice(0, 60);
@@ -418,6 +386,7 @@ export default function Home() {
         awardCount: b.awardCount ?? 1,
         sources:    b.sources ?? [b.source ?? ""],
         isbn:       b.isbn || "",
+        koreanIsbn: b.koreanIsbn || "",
       }));
 
       const res = await fetch("/api/ai-search", {
@@ -483,6 +452,10 @@ export default function Home() {
     setSelectedSources((prev) =>
       prev.includes(src) ? prev.filter((s) => s !== src) : [...prev, src]
     );
+  };
+  const clearAllFilters = () => {
+    setQuery(""); setSelectedSources([]); setSelectedAges([]);
+    setActiveTags([]); setSortModes([]); setAiMode(false);
   };
 
   // ── 위치 가져오기 ───────────────────────────
@@ -862,7 +835,7 @@ export default function Home() {
             {([
               { label: "🏛 사서 추천", sources: ["국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청"] },
               { label: "📖 교육 기관", sources: ["교과연계도서","학교도서관저널"] },
-              { label: "🏆 국제 수상", sources: ["칼데콧","안데르센","볼로냐","뉴베리","그린어웨이","카네기"] },
+              { label: "🏆 국제 수상", sources: ["칼데콧","안데르센","볼로냐","뉴베리","카네기"] },
             ] as const).map(group => (
               <div key={group.label} className="collection-group">
                 <span className="collection-group-label">{group.label}</span>
@@ -902,34 +875,18 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 수정 6: 세부 조건 재정리 */}
-          <div className="filter-row">
-            <span className="filter-label">세부 조건</span>
-            <div className="filter-chips">
-              <button
-                className={`chip ${showMultiOnly ? "active" : ""}`}
-                onClick={() => setShowMultiOnly(v => !v)}
-                title="칼데콧·안데르센·볼로냐·뉴베리·카네기 등 국제수상작만 표시"
-              >
-                🏆 국제수상
-              </button>
-              <button
-                className={`chip ${showRecentOnly ? "active" : ""}`}
-                onClick={() => setShowRecentOnly(v => !v)}
-                title="최근 1년 이내 출간된 신간만 표시"
-              >
-                🆕 최근 1년 신간
-              </button>
-            </div>
-          </div>
-
           {/* 정렬 (복수 선택 가능 — 선택 순서가 우선순위) */}
           <div className="filter-row sort-row">
             <span className="filter-label">정렬</span>
             <div className="filter-chips" style={{ alignItems: "center", gap: ".35rem" }}>
+              {(selectedSources.length > 0 || selectedAges.length > 0 || activeTags.length > 0 || sortModes.length > 0 || query.trim()) && (
+                <button className="sort-clear-btn" onClick={clearAllFilters} title="컬렉션·연령·태그·정렬·검색어 모두 해제">
+                  ✕ 전체 해제
+                </button>
+              )}
               {sortModes.length > 0 && (
                 <button className="sort-clear-btn" onClick={() => { setSortModes([]); setAiMode(false); }}>
-                  초기화
+                  정렬 초기화
                 </button>
               )}
               {(
@@ -1009,7 +966,7 @@ export default function Home() {
       </section>
 
       {/* 추천 도서 라벨 — 필터/검색 없는 기본 상태 */}
-      {!query.trim() && !aiMode && selectedSources.length === 0 && selectedAges.length === 0 && !showMultiOnly && !showRecentOnly && (
+      {!query.trim() && !aiMode && selectedSources.length === 0 && selectedAges.length === 0 && (
         <div className="rec-label-row">
           <span className="rec-label-title">📚 추천 도서</span>
           <span className="rec-label-desc">
@@ -1093,14 +1050,12 @@ export default function Home() {
             )}
 
             {/* 가중치 토글 */}
-            {(intlCount(book) >= 1 || (book.sources?.length ?? 0) >= 2) && (() => {
-              const aw   = intlCount(book);
-              const srcL = book.sources?.length ?? 0;
-              const libCnt = (libraryCounts as Record<string,number>)[book.koreanIsbn] ?? 0;
-              const ratio  = libCnt / 1599;
-              const w1 = aw >= 2 ? 2.0 : aw === 1 ? 1.5 : 1.0;
-              const w2 = srcL >= 4 ? 1.6 : srcL >= 3 ? 1.4 : srcL === 2 ? 1.2 : srcL === 1 ? 1.1 : 1.0;
-              const w3 = ratio >= 0.9 ? 1.5 : ratio >= 0.7 ? 1.3 : ratio >= 0.5 ? 1.15 : ratio >= 0.2 ? 1.05 : 1.0;
+            {(() => {
+              const w1 = awardWeight(book), w2 = recommendationWeight(book), w3 = libraryWeight(book);
+              if (w1 === 1.0 && w2 === 1.0 && w3 === 1.0) return null;
+              const aw = countIntlAwards(book);
+              const recoN = recommendationCount(book);
+              const lr = getLibRank(book);
               const total = Math.round(w1 * w2 * w3 * 100) / 100;
               const isOpen = weightOpenIds.has(book.id);
               return (
@@ -1111,13 +1066,13 @@ export default function Home() {
                   {isOpen && (
                     <div className="weight-detail">
                       <div className={w1 > 1.0 ? "weight-row active" : "weight-row dim"}>
-                        🏆 국제 수상: ×{w1.toFixed(1)} ({aw}개)
+                        🏆 국제 수상: ×{w1.toFixed(1)} ({aw}개 수상)
                       </div>
                       <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>
-                        📚 추천 기관: ×{w2.toFixed(1)} ({srcL}개 기관)
+                        📚 추천 기관: ×{w2.toFixed(1)} ({recoN}개 기관)
                       </div>
                       <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>
-                        🏛 도서관 보유: ×{w3.toFixed(2)} ({libCnt}관, {Math.round(ratio*100)}%)
+                        🏛 도서관 보유: ×{w3.toFixed(1)} {lr ? `(전국 보유 상위 ${lr.pct}% · ${lr.count}관)` : "(보유 데이터 없음)"}
                       </div>
                       <div className="weight-total">합산 가중치 ×{total}</div>
                     </div>
@@ -1281,14 +1236,12 @@ export default function Home() {
                       ))}
                     </div>
                     {/* 가중치 토글 (모달용) */}
-                    {(intlCount(detailBook) >= 1 || (detailBook.sources?.length ?? 0) >= 2) && (() => {
-                      const aw   = intlCount(detailBook);
-                      const srcL = detailBook.sources?.length ?? 0;
-                      const libCnt = (libraryCounts as Record<string,number>)[detailBook.koreanIsbn] ?? 0;
-                      const ratio  = libCnt / 1599;
-                      const w1 = aw >= 2 ? 2.0 : aw === 1 ? 1.5 : 1.0;
-                      const w2 = srcL >= 4 ? 1.6 : srcL >= 3 ? 1.4 : srcL === 2 ? 1.2 : srcL === 1 ? 1.1 : 1.0;
-                      const w3 = ratio >= 0.9 ? 1.5 : ratio >= 0.7 ? 1.3 : ratio >= 0.5 ? 1.15 : ratio >= 0.2 ? 1.05 : 1.0;
+                    {(() => {
+                      const w1 = awardWeight(detailBook), w2 = recommendationWeight(detailBook), w3 = libraryWeight(detailBook);
+                      if (w1 === 1.0 && w2 === 1.0 && w3 === 1.0) return null;
+                      const aw = countIntlAwards(detailBook);
+                      const recoN = recommendationCount(detailBook);
+                      const lr = getLibRank(detailBook);
                       const total = Math.round(w1 * w2 * w3 * 100) / 100;
                       const isOpen = weightOpenIds.has("modal-" + detailBook.id);
                       return (
@@ -1299,8 +1252,8 @@ export default function Home() {
                           {isOpen && (
                             <div className="weight-detail">
                               <div className={w1 > 1.0 ? "weight-row active" : "weight-row dim"}>🏆 국제 수상: ×{w1.toFixed(1)} ({aw}개)</div>
-                              <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>📚 추천 기관: ×{w2.toFixed(1)} ({srcL}개 기관)</div>
-                              <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>🏛 도서관: ×{w3.toFixed(2)} ({libCnt}관, {Math.round(ratio*100)}%)</div>
+                              <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>📚 추천 기관: ×{w2.toFixed(1)} ({recoN}개 기관)</div>
+                              <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>🏛 도서관 보유: ×{w3.toFixed(1)} {lr ? `(전국 보유 상위 ${lr.pct}% · ${lr.count}관)` : "(데이터 없음)"}</div>
                               <div className="weight-total">합산 ×{total}</div>
                             </div>
                           )}
@@ -1492,6 +1445,16 @@ export default function Home() {
           </div>
         </div>
       )}
+      {/* 맨 위로 */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="맨 위로"
+        title="맨 위로"
+        style={{ position: "fixed", right: "1rem", bottom: "1rem", zIndex: 50,
+          width: 44, height: 44, borderRadius: "50%", border: "none",
+          background: "var(--accent, #2f9e8f)", color: "#fff", fontSize: 20, lineHeight: "44px",
+          boxShadow: "0 2px 10px rgba(0,0,0,.22)", cursor: "pointer" }}
+      >↑</button>
     </main>
   );
 }
