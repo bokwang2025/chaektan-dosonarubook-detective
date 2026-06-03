@@ -14,13 +14,30 @@ function isbn13to10(isbn13: string): string | null {
   return body + (check === 10 ? "X" : check.toString());
 }
 
+/**
+ * 교보문고 "제공된 상품이미지가 없습니다" 플레이스홀더 감지
+ * - 정상 책 표지: Content-Type = image/jpeg, 매직바이트 FF D8 FF
+ * - 플레이스홀더:  Content-Type = image/png,  매직바이트 89 50 4E 47 (PNG)
+ * Kakao CDN은 원본이 PNG이면 리사이즈 후에도 image/png로 그대로 반환
+ * → PNG 판정 시 표지 없음으로 처리해 다음 소스로 폴백
+ */
+function isKyoboPlaceholder(buf: ArrayBuffer): boolean {
+  if (buf.byteLength < 8) return false;
+  const b = new Uint8Array(buf, 0, 4);
+  // PNG 매직바이트: 89 50 4E 47
+  return b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47;
+}
+
 async function fetchImage(url: string): Promise<{ buf: ArrayBuffer; ct: string } | null> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") || "image/jpeg";
     if (!ct.startsWith("image/")) return null;
-    return { buf: await res.arrayBuffer(), ct };
+    const buf = await res.arrayBuffer();
+    // 교보문고 플레이스홀더(PNG) → 표지 없음 처리
+    if (isKyoboPlaceholder(buf)) return null;
+    return { buf, ct };
   } catch { return null; }
 }
 
