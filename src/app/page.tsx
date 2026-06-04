@@ -765,6 +765,11 @@ export default function Home() {
                 </button>
               )}
             </div>
+            {(query.trim() || activeTags.length > 0) && (
+              <button className="reset-search-btn" onClick={() => { setQuery(""); setActiveTags([]); resetAi(); }} title="검색어·태그 초기화">
+                <X size={13} /> 검색 초기화
+              </button>
+            )}
             <button
               className={`ai-btn ${aiLoading ? "loading" : ""}`}
               onClick={() => handleAiSearch()}
@@ -879,8 +884,8 @@ export default function Home() {
           <div className="filter-row sort-row">
             <span className="filter-label">정렬</span>
             <div className="filter-chips" style={{ alignItems: "center", gap: ".35rem" }}>
-              {(selectedSources.length > 0 || selectedAges.length > 0 || activeTags.length > 0 || sortModes.length > 0 || query.trim()) && (
-                <button className="sort-clear-btn" onClick={clearAllFilters} title="컬렉션·연령·태그·정렬·검색어 모두 해제">
+              {(selectedSources.length > 0 || selectedAges.length > 0 || activeTags.length > 0 || sortModes.length > 0 || query.trim() || showKoreanOnly) && (
+                <button className="reset-all-prominent-btn" onClick={clearAllFilters} title="컬렉션·연령·태그·정렬·검색어 모두 해제">
                   ✕ 전체 해제
                 </button>
               )}
