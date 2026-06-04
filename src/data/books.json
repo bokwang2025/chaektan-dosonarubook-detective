@@ -186578,49 +186578,6 @@
   "additionalSources": []
  },
  {
-  "id": "nlcf_01581",
-  "source": "국립중앙도서관",
-  "sourceLabel": "국립중앙도서관 사서추천",
-  "awardYear": "",
-  "awardName": "국립중앙도서관 사서추천도서",
-  "awardCategory": "",
-  "awardSubCategory": "",
-  "originalTitle": "",
-  "koreanTitle": "산과 달이 만나는 곳",
-  "author": "그림 그레이스 린 쓰고, 옮김 최순희",
-  "publisher": "",
-  "publishedYear": "2011",
-  "isbn": "9788992026635",
-  "koreanIsbn": "9788992026635",
-  "targetAge": "초등3-4",
-  "tags": [
-   "동화",
-   "상상력",
-   "꿈"
-  ],
-  "situationTags": [],
-  "emotionTags": [],
-  "topicTags": [
-   "동화",
-   "상상력",
-   "꿈"
-  ],
-  "hook": "어린이의 꿈과 상상력을 키워주는 따뜻한 동화",
-  "notice": "오늘날 어린이들에게 꿈을 꿀 수 있는 동화보다는 자신을 계발하고 교과에 도움이 되는 책읽기가 독서라 고 알려주는 경우가 많습니다. 하지만 어린이들은 책을 통해 꿈을 꾸고 상상의 나래를 맘껏 펼 칠 수 있어 야 합니다",
-  "activity": "책을 읽고 난 후 여러분의 꿈이 담긴 산과 달을 그리거나 만들어 우리 반 벽에 붙여 함께 나눠봐요.",
-  "country": "한국",
-  "aiReason": null,
-  "sources": [
-   "국립중앙도서관"
-  ],
-  "sourceLabels": [
-   "국립중앙도서관 사서추천"
-  ],
-  "awards": [],
-  "awardCount": 0,
-  "additionalSources": []
- },
- {
   "id": "nlcf_01582",
   "source": "국립중앙도서관",
   "sourceLabel": "국립중앙도서관 사서추천",
@@ -307020,20 +306977,27 @@
   "country": "한국",
   "additionalSources": [],
   "sources": [
-   "국립어린이도서관"
+   "국립어린이도서관",
+   "안데르센"
   ],
   "sourceLabels": [
    "국립어린이도서관 사서추천",
-   "국립어린이 사서추천 2016-08"
+   "국립어린이 사서추천 2016-08",
+   "안데르센  (2016) · 원서추천"
   ],
   "awards": [
    {
     "name": "국립어린이도서관 사서추천",
     "year": "2016",
     "category": "추천"
+   },
+   {
+    "name": "안데르센상",
+    "year": "2016",
+    "category": ""
    }
   ],
-  "awardCount": 1
+  "awardCount": 2
  },
  {
   "id": "national-2016-21",
@@ -326644,8 +326608,8 @@
   "author": "Suzy Lee",
   "publisher": "책읽는곰",
   "publishedYear": "",
-  "isbn": "9791158361822",
-  "koreanIsbn": "9791158361822",
+  "isbn": "",
+  "koreanIsbn": "",
   "originalIsbn": "",
   "country": "",
   "koreanPublished": false,
@@ -326675,7 +326639,8 @@
   "hook": "낯선 곳에서 발견하는 작은 용기와 연결의 순간",
   "notice": "안데르센상 수상작. 제목 '우로마'는 낯선 도시나 공간을 배경으로 한 이야기로 추정됩니다. 혼자라고 느껴지는 순간에도 주변과 연결되어 있음을 발견하는 성장 이야기로 보입니다.",
   "activity": "책을 먼저 읽어보신 뒤 활용해 주세요. 책 속 주인공이 낯선 곳에서 발견한 것들을 함께 그려보거나 만들어 보면 좋습니다. 아이가 자신의 경험 속에서 '처음엔 낯설었지만 좋아진 순간'을 이야기하도록 격려하면, 변화 속에서도 연결되어 있다는 감정을 나눌 수 있습니다.",
-  "additionalSources": []
+  "additionalSources": [],
+  "needs_review": true
  },
  {
   "id": "andersen-2022_0032",
@@ -330656,8 +330621,8 @@
   "author": "Igor Oleynikov",
   "publisher": "현북스",
   "publishedYear": "",
-  "isbn": "9791157412259",
-  "koreanIsbn": "9791157412259",
+  "isbn": "",
+  "koreanIsbn": "",
   "originalIsbn": "",
   "country": "",
   "koreanPublished": false,
@@ -330688,7 +330653,8 @@
   "hook": "작은 고양이의 용감한 도전이 만드는 변화",
   "notice": "안데르센상 수상작. 마오마오라는 고양이가 자신의 한계를 넘어 달리며 성장하는 이야기. 용기와 도전의 메시지를 담은 그림책으로, 아이들에게 두려움을 극복하는 법을 보여줍니다.",
   "activity": "마오마오처럼 '할 수 없다고 생각했던 것'을 함께 시도해 보세요. 아이가 도전하고 싶지만 두려워하는 작은 활동(줄넘기, 미끄럼틀, 새로운 음식 먹기 등)을 선택해 함께 해보면 좋습니다. 책을 먼저 읽어보신 뒤 활용해 주세요. 활동 후 \"마오마오처럼 용감하게 해낸 기분이 어땠어?\"",
-  "additionalSources": []
+  "additionalSources": [],
+  "needs_review": true
  },
  {
   "id": "andersen-2018_0027",
@@ -331537,66 +331503,6 @@
   "additionalSources": []
  },
  {
-  "id": "andersen-2016_0011",
-  "source": "안데르센",
-  "sourceLabel": "안데르센  (2016) · 원서추천",
-  "sources": [
-   "안데르센"
-  ],
-  "sourceLabels": [
-   "안데르센  (2016) · 원서추천"
-  ],
-  "awards": [
-   {
-    "name": "안데르센상",
-    "year": "2016",
-    "category": ""
-   }
-  ],
-  "awardCount": 1,
-  "awardYear": "2016",
-  "awardName": "안데르센상",
-  "awardCategory": "",
-  "originalTitle": "란란의 아름다운 날",
-  "koreanTitle": "란란의 아름다운 날",
-  "author": "Cao Wenxuan",
-  "publisher": "키다리",
-  "publishedYear": "",
-  "isbn": "9791157850785",
-  "koreanIsbn": "9791157850785",
-  "originalIsbn": "",
-  "country": "",
-  "koreanPublished": false,
-  "targetAge": "어린이",
-  "tags": [
-   "일상의 아름다움",
-   "성장",
-   "따뜻함",
-   "관계",
-   "소중함",
-   "감정",
-   "중국문학"
-  ],
-  "situationTags": [
-   "조용한 오후에 함께 읽기",
-   "감정이 풍부해지는 저녁시간",
-   "마음이 바쁜 날"
-  ],
-  "emotionTags": [
-   "따뜻함",
-   "감동",
-   "공감"
-  ],
-  "topicTags": [
-   "일상 속 아름다움 발견",
-   "인간관계와 성장"
-  ],
-  "hook": "평범한 날 속에서 발견하는 작은 아름다움과 소중함",
-  "notice": "안데르센상 수상작. 중국 현대문학을 대표하는 작가 차오원쉬안의 작품으로, 주인공 란란이 일상 속에서 만나는 사람들과의 따뜻한 순간들을 통해 삶의 의미와 아름다움을 깨닫는 성장 이야기입니다.",
-  "activity": "란란이 만난 사람들 중 가장 기억에 남는 장면을 함께 그려보세요. 그 장면에서 란란이 느꼈을 감정을 색깔로 표현하면 좋아요. 완성 후 \"이 날이 란란에게 아름다웠던 이유가 뭘까?\"라고 물어봐 주세요. (책을 먼저 읽어보신 뒤 활용해 주세요)",
-  "additionalSources": []
- },
- {
   "id": "andersen-2016_0012",
   "source": "안데르센",
   "sourceLabel": "안데르센  (2016) · 원서추천",
@@ -331682,8 +331588,8 @@
   "author": "Cao Wenxuan",
   "publisher": "현북스",
   "publishedYear": "",
-  "isbn": "9791157412259",
-  "koreanIsbn": "9791157412259",
+  "isbn": "",
+  "koreanIsbn": "",
   "originalIsbn": "",
   "country": "",
   "koreanPublished": false,
@@ -331715,7 +331621,8 @@
   "hook": "작은 고양이의 용감한 도전이 만드는 변화",
   "notice": "안데르센상 수상작. 마오마오라는 고양이가 자신의 한계를 넘어 달리며 성장하는 이야기. 두려움을 극복하고 목표를 향해 나아가는 용기와 결단력을 담은 감동적인 성장 동화입니다.",
   "activity": "마오마오처럼 '나도 할 수 있는 작은 도전'을 함께 정해보세요. 줄넘기, 새로운 음식 먹어보기, 처음 가는 장소 방문 등 아이가 조금 두렵지만 해낼 수 있는 것을 선택하고 함께 시도한 후, \"마오마오처럼 용감하게 도전했을 때 어떤 기분이 들었어?\"라고 물어봐 주세요. (책을 먼저 읽어보신 뒤 활용해 주세요.)",
-  "additionalSources": []
+  "additionalSources": [],
+  "needs_review": true
  },
  {
   "id": "andersen-2016_0014",
@@ -331743,8 +331650,8 @@
   "author": "Cao Wenxuan",
   "publisher": "책읽는곰",
   "publishedYear": "",
-  "isbn": "9791158361822",
-  "koreanIsbn": "9791158361822",
+  "isbn": "",
+  "koreanIsbn": "",
   "originalIsbn": "",
   "country": "",
   "koreanPublished": false,
@@ -331775,7 +331682,8 @@
   "hook": "낯선 땅에서 자신의 뿌리를 찾아가는 아이의 성장 이야기",
   "notice": "안데르센상 수상작. 이방인으로 살아가는 주인공이 새로운 환경 속에서 자신의 정체성을 깨닫고 성장하는 과정을 그린 작품. 문화적 차이와 소속감에 관한 따뜻한 이야기입니다.",
   "activity": "책을 먼저 읽어보신 뒤 활용해 주세요. 주인공이 새로운 곳에서 발견한 것들을 함께 그려보거나 이야기 나누면 좋습니다. 아이에게 \"당신이 속한 곳에서 가장 소중한 것은 무엇인가요?\"라고 물어보세요.",
-  "additionalSources": []
+  "additionalSources": [],
+  "needs_review": true
  },
  {
   "id": "andersen-2016_0015",
@@ -374357,66 +374265,6 @@
   "additionalSources": []
  },
  {
-  "id": "newbery-2023_0001",
-  "source": "뉴베리",
-  "sourceLabel": "뉴베리 Winner (2023)",
-  "sources": [
-   "뉴베리"
-  ],
-  "sourceLabels": [
-   "뉴베리 Winner (2023)"
-  ],
-  "awards": [
-   {
-    "name": "뉴베리상",
-    "year": "2023",
-    "category": "Winner"
-   }
-  ],
-  "awardCount": 1,
-  "awardYear": "2023",
-  "awardName": "뉴베리상",
-  "awardCategory": "Winner",
-  "originalTitle": "Freewater",
-  "koreanTitle": "프리워터",
-  "author": "Amina Luqman-Dawson",
-  "publisher": "비룡소",
-  "publishedYear": "2024",
-  "isbn": "9788965466642",
-  "koreanIsbn": "9788965466642",
-  "originalIsbn": "",
-  "country": "미국",
-  "koreanPublished": true,
-  "targetAge": "초등5-6",
-  "tags": [
-   "자유",
-   "노예제",
-   "우정",
-   "용기",
-   "역사",
-   "모험",
-   "희망",
-   "정체성"
-  ],
-  "situationTags": [
-   "역사에 대해 생각해보고 싶을 때",
-   "용기와 우정의 의미를 나누고 싶을 때"
-  ],
-  "emotionTags": [
-   "두려움과 용기",
-   "희망",
-   "연대감"
-  ],
-  "topicTags": [
-   "역사 속 인권",
-   "우정과 협력"
-  ],
-  "hook": "자유를 향한 용기 있는 발걸음, 함께라면 가능하다",
-  "notice": "뉴베리상 수상작. 노예제 시대를 배경으로 세 아이가 자유를 찾아 위험한 여정을 떠난다. 우정과 희망, 그리고 자유의 의미를 깊이 있게 그린 역사 소설입니다.",
-  "activity": "책을 먼저 읽어보신 뒤 활용해 주세요. 세 주인공이 각각 자유를 꿈꾼 이유를 정리한 뒤, 아이와 함께 '나에게 자유란 무엇인가'를 그림이나 글로 표현하면 좋아요. 완성 후 \"이 책의 아이들이 가장 원했던 자유와 너의 자유는 어떻게 다를까?\"라고 물어봐 주세요.",
-  "additionalSources": []
- },
- {
   "id": "newbery-2023_0003",
   "source": "뉴베리",
   "sourceLabel": "뉴베리 Honor (2023)",
@@ -376911,10 +376759,12 @@
   "source": "뉴베리",
   "sourceLabel": "뉴베리 Honor (2010)",
   "sources": [
-   "뉴베리"
+   "뉴베리",
+   "국립중앙도서관"
   ],
   "sourceLabels": [
-   "뉴베리 Honor (2010)"
+   "뉴베리 Honor (2010)",
+   "국립중앙도서관 사서추천"
   ],
   "awards": [
    {
@@ -446128,19 +445978,26 @@
   "source": "학교도서관저널",
   "sourceLabel": "학교도서관저널 10월호",
   "sources": [
-   "학교도서관저널"
+   "학교도서관저널",
+   "뉴베리"
   ],
   "sourceLabels": [
-   "학교도서관저널 10월호"
+   "학교도서관저널 10월호",
+   "뉴베리 Winner (2023)"
   ],
   "awards": [
    {
     "name": "학교도서관저널",
     "year": "2023",
     "category": "어린이문학"
+   },
+   {
+    "name": "뉴베리상",
+    "year": "2023",
+    "category": "Winner"
    }
   ],
-  "awardCount": 1,
+  "awardCount": 2,
   "awardYear": "2023",
   "awardName": "학교도서관저널",
   "awardCategory": "어린이문학",

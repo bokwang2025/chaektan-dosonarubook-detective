@@ -998,8 +998,9 @@ body {
 .collection-group { display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
 .collection-group:first-child { margin-top: .2rem; }
 .collection-group-label {
-  font-size: .62rem; font-weight: 700; letter-spacing: .06em;
-  color: var(--text-muted); text-transform: uppercase; opacity: .8;
+  font-size: .74rem; font-weight: 700; letter-spacing: 0;
+  color: var(--text-sub); text-transform: none; opacity: 1;
+  padding-left: .15rem;
 }
 .collection-group .filter-chips { flex-direction: row; flex-wrap: wrap; }
 
