@@ -23,6 +23,9 @@ interface Book {
   hook: string; notice: string; activity: string; country: string;
   additionalSources?: string[];
   aiReason?: string;
+  // 메타 배치 생성 필드 (그림책 중심)
+  ageGroup?: string; bookType?: string; isPictureBook?: boolean;
+  summary?: string; summaryEstimate?: boolean; _excluded?: boolean;
   // 가중치 필드 (다중 수상·추천 모델)
   awardCount?: number;
   sources?: string[];
@@ -73,7 +76,7 @@ function getBookFormats(book: Book) {
 const allBooks = booksData as Book[];
 
 // ISBN 있는 책만 (서울어린이도서관 300권 제외)
-const booksWithIsbn = allBooks.filter((b) => b.isbn && b.isbn.length > 0);
+const booksWithIsbn = allBooks.filter((b) => (b.isbn || b.koreanIsbn) && b.isPictureBook === true && b.ageGroup !== "비대상" && !b._excluded);
 
 const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeClass: string; desc: string }> = {
   "칼데콧":          { label: "🏅 칼데콧",        chipClass: "active-gold",    badgeClass: "badge-caldecott", desc: "미국 최고 그림책 일러스트레이터상. 매년 ALA가 미국 아동 그림책 작가에게 수여. 세계적으로 인정받는 그림책이 많습니다." },
@@ -96,21 +99,19 @@ const AWARD_SOURCES = new Set(["칼데콧", "안데르센", "볼로냐", "카네
 
 // 연령 순서 정의
 // "어린이"(3,716권)는 출처에서 세분화 없이 제공 → "전체 어린이"로 표시, 필터에는 포함
-const AGE_ORDER = ["6-7세", "초등1-2", "초등3-4", "초등5-6", "어린이"]; // 청소년은 books_youth.json 별도 풀
+const AGE_ORDER = ["미취학", "초등저학년", "초등고학년"];
 
 // "어린이" → UI 표시용 레이블
 function ageLabel(age: string): string {
-  if (age === "6-7세") return "5-7세";
-  if (age === "어린이") return "전체";   // 수정 5: 어린이 → 전체
+  if (age === "미취학") return "미취학 (4-7세)";
+  if (age === "초등저학년") return "초등 저학년 (1-3)";
+  if (age === "초등고학년") return "초등 고학년 (4-6)";
   return age;
 }
 const AGE_TOOLTIP: Record<string, string> = {
-  "6-7세":   "5세~7세 유아·유치원생 대상 그림책",
-  "초등1-2": "초등학교 1~2학년 대상",
-  "초등3-4": "초등학교 3~4학년 대상",
-  "초등5-6": "초등학교 5~6학년 대상",
-  "청소년":  "중학교~고등학교 청소년 대상",
-  "어린이":  "초등 전 학년 (1~6학년) 대상 · 일부 5~7세 포함",
+  "미취학":     "미취학 유아 (만 4~7세) — 그림 위주·읽어주기",
+  "초등저학년": "초등 1~3학년 — 또래·일상, 스스로 읽기 시작",
+  "초등고학년": "초등 4~6학년 — 사회·정체성 등 깊은 주제",
 };
 
 // 색상 테마
@@ -157,7 +158,8 @@ function compactLabel(sourceLabel: string, awardYear?: string): string {
   if (statusMatch) {
     s = `${statusMatch[1]} ${statusMatch[2].replace(/\s+/g, "")}`;
   }
-  return year ? `${s} ${year}` : s;
+  // 라벨에 이미 연도(예: 학교도서관저널 202412)가 포함되어 있으면 연도를 다시 붙이지 않음
+  return (year && !s.includes(year)) ? `${s} ${year}` : s;
 }
 
 // ─── W1용: 국제 수상 개수 (smartSearch 중앙 함수 재사용) ─────
@@ -169,9 +171,8 @@ const CONFIRMED_COVERS = confirmedCoversData as Record<string, {
 
 /** 가중치(W1×W2×W3) 기준 내림차순 정렬된 초기 도서 목록 */
 function buildInitialBooks(): Book[] {
-  return [...allBooks]
-    .filter((b) => b.koreanIsbn)
-    .sort((a, b) => calcWeight(b) - calcWeight(a));
+  // 그림책 중심 풀(booksWithIsbn)만 가중치순 노출
+  return [...booksWithIsbn].sort((a, b) => calcWeight(b) - calcWeight(a));
 }
 
 const INITIAL_BOOKS = buildInitialBooks();
@@ -200,6 +201,7 @@ export default function Home() {
   const [searchMode,      setSearchMode]     = useState<"keyword"|"ai">("keyword");
   const [showKoreanOnly,  setShowKoreanOnly] = useState(false);
   const [books,           setBooks]          = useState<Book[]>(INITIAL_BOOKS);
+  const [resultCount,     setResultCount]    = useState<number>(INITIAL_BOOKS.length);
   const [locationDenied,  setLocationDenied] = useState(false);
   const [aiMode,         setAiMode]         = useState(false);
   const [aiEngine,       setAiEngine]       = useState<"claude"|"smart"|"">("");
@@ -239,7 +241,7 @@ export default function Home() {
 
   // ── 가용 연령 목록 ──────────────────────────
   const availableAges = AGE_ORDER.filter((a) =>
-    booksWithIsbn.some((b) => b.targetAge === a)
+    booksWithIsbn.some((b) => b.ageGroup === a)
   );
 
   // ── 일반 필터 ──────────────────────────────
@@ -250,6 +252,7 @@ export default function Home() {
 
     // 아무 필터·검색어도 없으면 가중치 정렬 전체 목록 (더보기로 확장)
     if (!hasFilter) {
+      setResultCount(INITIAL_BOOKS.length);
       setBooks(showAll ? INITIAL_BOOKS : INITIAL_BOOKS.slice(0, 60));
       return;
     }
@@ -269,20 +272,29 @@ export default function Home() {
     // G: 관련도 임계값 필터 (calcRelevance < 1 → 제외) + 작가/제목 직접 일치 허용
     if (query.trim()) {
       const q = query.toLowerCase();
-      filtered = filtered.filter((b) => {
-        // 작가·제목 직접 일치는 항상 포함
-        if (b.koreanTitle.toLowerCase().includes(q) || b.originalTitle.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)) return true;
-        // 태그·hook·유의어 기반 관련도 임계값
-        const bookEntry = {
-          id: b.id, title: b.koreanTitle || b.originalTitle,
-          tags: b.tags, hook: b.hook || "",
-          awards: b.awards, sources: b.sources,
-        };
-        return calcRelevance(query, bookEntry) >= 1;
-      });
+      // 1차: 제목·작가·정확한 태그 직접 일치 → 제목/작가 검색은 주제 확장 없이 이 결과만 노출
+      const directHit = (b: Book) =>
+        b.koreanTitle.toLowerCase().includes(q) ||
+        b.originalTitle.toLowerCase().includes(q) ||
+        b.author.toLowerCase().includes(q) ||
+        b.tags.some((t) => t.toLowerCase() === q);
+      const directs = filtered.filter(directHit);
+      if (directs.length > 0) {
+        filtered = directs;
+      } else {
+        // 직접 일치가 없을 때만 의미·주제(유의어) 기반 확장 폴백
+        filtered = filtered.filter((b) => {
+          const bookEntry = {
+            id: b.id, title: b.koreanTitle || b.originalTitle,
+            tags: b.tags, hook: b.hook || "",
+            awards: b.awards, sources: b.sources,
+          };
+          return calcRelevance(query, bookEntry) >= 1;
+        });
+      }
     }
     if (selectedAges.length > 0)
-      filtered = filtered.filter((b) => selectedAges.includes(b.targetAge));
+      filtered = filtered.filter((b) => selectedAges.includes(b.ageGroup || ""));
     if (selectedSources.length > 0)
       filtered = filtered.filter((b) =>
         selectedSources.includes(b.source) ||
@@ -337,6 +349,7 @@ export default function Home() {
       filtered = [...filtered].sort((a, b) => weightedScore(b) - weightedScore(a));
     }
 
+    setResultCount(filtered.length);
     setBooks(showAll ? filtered : filtered.slice(0, 60));
   }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, activeTags, sortModes]); // showAll 포함 — 기본 화면 더보기 지원
 
@@ -364,7 +377,7 @@ export default function Home() {
       // I: 즉시 로컬 smartSearch 결과 먼저 표시 (0초 응답)
       const localPool = booksWithIsbn
         .filter((b) => !effectiveKoreanOnly || (b.koreanIsbn && b.koreanIsbn.length > 0))
-        .filter((b) => effectiveAges.length === 0    || effectiveAges.includes(b.targetAge))
+        .filter((b) => effectiveAges.length === 0    || effectiveAges.includes(b.ageGroup || ""))
         .filter((b) => effectiveSources.length === 0 || effectiveSources.includes(b.source));
       const localEntries = localPool.map((b) => ({
         id: b.id, title: b.koreanTitle || b.originalTitle,
@@ -629,6 +642,13 @@ export default function Home() {
   // ── 상세페이지 열기 (줄거리 AI 생성) ──────────
   const openDetail = async (book: Book) => {
     setDetailBook(book);
+    // 저장된 줄거리(고정본) 우선 — 라이브 생성 폐기로 환각·변동 제거
+    if ((book.summary || "").trim()) {
+      setSummary(book.summary as string);
+      setSummaryIsEstimate(book.summaryEstimate === true);
+      setSummaryLoading(false);
+      return;
+    }
     setSummary("");
     setSummaryIsEstimate(false);
     setSummaryLoading(true);
@@ -678,23 +698,6 @@ export default function Home() {
     );
   };
 
-  // 전체 필터링된 수 (더보기용)
-  const totalFiltered = (() => {
-    let f = booksWithIsbn;
-    if (showKoreanOnly) f = f.filter((b) => b.koreanIsbn && b.koreanIsbn.length > 0);
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      f = f.filter((b) =>
-        b.koreanTitle.toLowerCase().includes(q) ||
-        b.originalTitle.toLowerCase().includes(q) ||
-        b.author.toLowerCase().includes(q) ||
-        b.tags.some((t) => t.includes(q))
-      );
-    }
-    if (selectedAges.length > 0) f = f.filter((b) => selectedAges.includes(b.targetAge));
-    if (selectedSources.length > 0) f = f.filter((b) => selectedSources.includes(b.source));
-    return f.length;
-  })();
 
   // ── 렌더 ───────────────────────────────────
   return (
@@ -708,7 +711,7 @@ export default function Home() {
         <p className="app-tagline-sub">동화구연 13년 전문가의 책 선별·활동 설계 노하우를 AI로</p>
         <p className="subtitle">
           칼데콧·안데르센 등 국제 아동문학상과 국내 공신력 있는 기관이<br />
-          직접 감별한 도서 <strong>{allBooks.length.toLocaleString()}권</strong> 중에서,<br />
+          직접 감별한 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> 중에서,<br />
           인기순이 아닌 <strong>진짜 좋은 책</strong>을 주제·감정·상황으로 찾고<br />
           내 근처 도서관의 <strong>대출 가능 여부</strong>를 바로 확인하세요.
         </p>
@@ -726,9 +729,11 @@ export default function Home() {
             <div className="about-sources">
               <strong>🏆 수상·추천 컬렉션별 특징</strong>
               <ul>
-                {Object.entries(SOURCE_CONFIG).map(([src, cfg]) => (
-                  <li key={src}><span className="about-src-label">{cfg.label}</span> {cfg.desc}</li>
-                ))}
+                {(["칼데콧","안데르센","볼로냐","카네기","국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서","교과연계도서","학교도서관저널"] as const).map((src) => {
+                  const cfg = SOURCE_CONFIG[src];
+                  if (!cfg) return null;
+                  return <li key={src}><span className="about-src-label">{cfg.label}</span> {cfg.desc}</li>;
+                })}
               </ul>
             </div>
           </div>
@@ -781,6 +786,12 @@ export default function Home() {
                 : <><Sparkles size={15} /> AI 추천</>}
             </button>
           </div>
+
+          {(query.trim() || activeTags.length > 0 || selectedSources.length > 0 || selectedAges.length > 0 || showKoreanOnly) && !aiMode && (
+            <div style={{ fontSize: ".85rem", color: "var(--text-sub)", margin: ".1rem 0 .25rem", paddingLeft: ".25rem" }}>
+              <strong style={{ color: "var(--text)" }}>{resultCount.toLocaleString()}권</strong>의 그림책이 검색되었어요
+            </div>
+          )}
 
           {/* 활성 태그 + 연관 태그 (통합 검색) */}
           {!aiMode && (
@@ -838,9 +849,9 @@ export default function Home() {
               <span className="collection-sub">전체 또는 특정 컬렉션에서 검색</span>
             </div>
             {([
-              { label: "🏛 사서 추천", sources: ["국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청"] },
+              { label: "🏆 국제 수상", sources: ["칼데콧","안데르센","볼로냐","카네기"] },
+              { label: "🏛 사서 추천", sources: ["국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서"] },
               { label: "📖 교육 기관", sources: ["교과연계도서","학교도서관저널"] },
-              { label: "🏆 국제 수상", sources: ["칼데콧","안데르센","볼로냐","뉴베리","카네기"] },
             ] as const).map(group => (
               <div key={group.label} className="collection-group">
                 <span className="collection-group-label">{group.label}</span>
@@ -853,7 +864,7 @@ export default function Home() {
                         key={src}
                         className={`chip ${selectedSources.includes(src) ? cfg.chipClass : ""}`}
                         onClick={() => toggleSource(src)}
-                        title={cfg.desc}
+                        data-tooltip={cfg.desc}
                       >{cfg.label}</button>
                     );
                   })}
@@ -871,7 +882,7 @@ export default function Home() {
                   key={age}
                   className={`chip ${selectedAges.includes(age) ? "active" : ""} ${age === "어린이" ? "chip-age-broad" : ""}`}
                   onClick={() => toggleAge(age)}
-                  title={AGE_TOOLTIP[age]}
+                  data-tooltip={AGE_TOOLTIP[age]}
                 >
                   {ageLabel(age)}
                   {age === "어린이" && <span className="chip-age-sub">초1~6</span>}
@@ -913,7 +924,7 @@ export default function Home() {
                       );
                       setAiMode(false);
                     }}
-                    title={title}
+                    data-tooltip={title}
                   >
                     {isActive && <span className="sort-priority">{idx + 1}</span>}
                     {label}
@@ -1044,13 +1055,7 @@ export default function Home() {
               <span>{book.author}</span>
             </div>
 
-            {book.aiReason && (
-              <div className="ai-reason">
-                <Sparkles size={12} />
-                <span>{book.aiReason}</span>
-              </div>
-            )}
-            {!book.aiReason && book.hook && (
+            {book.hook && (
               <div className="hook-text">{book.hook}</div>
             )}
 
@@ -1085,7 +1090,7 @@ export default function Home() {
                 </div>
               );
             })()}
-            {!book.aiReason && !book.hook && (() => {
+            {!book.hook && (() => {
               // hook 없을 때 fallback: 태그 조합 → 없으면 줄거리 유도
               const allTags = [
                 ...(book.situationTags || []),
@@ -1108,11 +1113,11 @@ export default function Home() {
               );
             })()}
 
-            {(book.targetAge || book.tags.length > 0) && (
+            {(book.ageGroup || book.tags.length > 0) && (
               <div className="tags-container">
-                {book.targetAge && (
-                  <span className={`tag-chip tag-chip-age ${book.targetAge === "어린이" ? "tag-chip-age-broad" : ""}`}>
-                    {ageLabel(book.targetAge)}
+                {book.ageGroup && (
+                  <span className="tag-chip tag-chip-age">
+                    {ageLabel(book.ageGroup)}
                   </span>
                 )}
                 {book.activity && book.activity.trim() && (
@@ -1194,10 +1199,10 @@ export default function Home() {
       </section>
 
       {/* 더보기 */}
-      {!aiMode && !showAll && totalFiltered > 60 && (
+      {!aiMode && !showAll && resultCount > 60 && (
         <div style={{ textAlign: "center", paddingBottom: "3rem" }}>
           <button className="show-more-btn" onClick={() => setShowAll(true)}>
-            <ChevronDown size={16} /> 전체 {totalFiltered.toLocaleString()}권 보기
+            <ChevronDown size={16} /> 전체 {resultCount.toLocaleString()}권 보기
           </button>
         </div>
       )}
@@ -1269,12 +1274,9 @@ export default function Home() {
                 ) : detailBook.awardName ? (
                   <div className="detail-award">{detailBook.sourceLabel} {detailBook.awardYear && `(${detailBook.awardYear})`}</div>
                 ) : null}
-                {detailBook.targetAge && (
+                {detailBook.ageGroup && (
                   <div className="detail-age">
-                    대상 연령: {ageLabel(detailBook.targetAge)}
-                    {detailBook.targetAge === "어린이" && (
-                      <span className="age-broad-note"> (출처 분류 기준)</span>
-                    )}
+                    대상 연령: {ageLabel(detailBook.ageGroup)}
                   </div>
                 )}
                 <div className="detail-tags">
