@@ -4054,5 +4054,37 @@
     "awardYear": "2010",
     "dual": false,
     "id": "carnegie-2010-248"
+  },
+  "9788958282075": {
+    "url": "https://image.aladin.co.kr/product/87/80/cover500/895828207x_1.jpg",
+    "title": "개가 무서워요",
+    "source": "안데르센",
+    "awardYear": "",
+    "dual": false,
+    "id": "andersen-2006_0026"
+  },
+  "9788971967744": {
+    "url": "https://image.aladin.co.kr/product/27/43/cover500/8971967749_2.jpg",
+    "title": "아빠가 되고 싶어요",
+    "source": "안데르센",
+    "awardYear": "",
+    "dual": false,
+    "id": "andersen-2006_0037"
+  },
+  "9788956631158": {
+    "url": "https://image.aladin.co.kr/product/65/79/cover500/8956631158_1.jpg",
+    "title": "처음에는 아무것도 없었어",
+    "source": "안데르센",
+    "awardYear": "",
+    "dual": false,
+    "id": "andersen-2006_0030"
+  },
+  "9788990797124": {
+    "url": "https://image.aladin.co.kr/product/47/29/cover500/8990797128_1.gif",
+    "title": "나비동화",
+    "source": "안데르센",
+    "awardYear": "",
+    "dual": false,
+    "id": "andersen-2006_0032"
   }
 }
