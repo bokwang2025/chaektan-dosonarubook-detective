@@ -26,6 +26,7 @@ interface Book {
   // 메타 배치 생성 필드 (그림책 중심)
   ageGroup?: string; bookType?: string; isPictureBook?: boolean;
   summary?: string; summaryEstimate?: boolean; _excluded?: boolean;
+  companions?: { title: string; original?: string }[];
   // 가중치 필드 (다중 수상·추천 모델)
   awardCount?: number;
   sources?: string[];
@@ -1333,6 +1334,17 @@ export default function Home() {
               <div className="detail-activity-section">
                 <div className="detail-section-title">✏️ 독서 후 활동</div>
                 <p className="detail-activity">{detailBook.activity}</p>
+              </div>
+            )}
+
+            {detailBook.companions && detailBook.companions.length > 0 && (
+              <div className="detail-activity-section">
+                <div className="detail-section-title">📚 함께 보면 좋은 짝꿍 책</div>
+                {detailBook.companions.map((c, i) => (
+                  <p key={i} className="detail-activity" style={{ margin: ".15rem 0" }}>
+                    · {c.title}{c.original ? ` (${c.original})` : ""}
+                  </p>
+                ))}
               </div>
             )}
 
