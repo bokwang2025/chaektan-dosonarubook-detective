@@ -166,8 +166,8 @@ function compactLabel(sourceLabel: string, awardYear?: string): string {
 // ─── W1용: 국제 수상 개수 (smartSearch 중앙 함수 재사용) ─────
 
 // ─── 초기 표시용: 표지 확인된 책만, 출처 다양 + 중복수상 최우선 ──────────
-const CONFIRMED_COVERS = confirmedCoversData as Record<string, {
-  url: string; title: string; source: string; awardYear: string; dual: boolean; id: string;
+const CONFIRMED_COVERS = confirmedCoversData as unknown as Record<string, {
+  url: string; title: string; source: string; awardYear?: string; dual?: boolean; id?: string;
 }>;
 
 /** 가중치(W1×W2×W3) 기준 내림차순 정렬된 초기 도서 목록 */
