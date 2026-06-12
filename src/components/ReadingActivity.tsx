@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Loader2, Palette } from "lucide-react";
 
 interface ActivityItem {
   key: string;
@@ -17,6 +18,8 @@ interface ReadingActivityProps {
   tags?: string[];
   hook?: string;
   targetAge?: string;
+  /** 카드의 '독후활동' 버튼으로 진입 시 자동 펼침 */
+  autoOpen?: boolean;
 }
 
 export default function ReadingActivity({
@@ -26,6 +29,7 @@ export default function ReadingActivity({
   tags = [],
   hook = "",
   targetAge = "",
+  autoOpen = false,
 }: ReadingActivityProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +38,7 @@ export default function ReadingActivity({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   const cacheKey = `reading-activity:${title}`;
+  const autoOpened = useRef(false);
 
   const fetchActivities = async () => {
     if (loaded) { setLoaded(false); setActivities([]); return; }
@@ -79,55 +84,40 @@ export default function ReadingActivity({
     }
   };
 
+  // 자동 펼침 (마운트 시 1회)
+  useEffect(() => {
+    if (autoOpen && !autoOpened.current && !loaded && !loading) {
+      autoOpened.current = true;
+      fetchActivities();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpen]);
+
   return (
-    <div className="mt-4">
-      {/* 독후활동 버튼 */}
-      <button
-        onClick={fetchActivities}
-        disabled={loading}
-        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
-                   bg-amber-50 text-amber-700 border border-amber-200
-                   hover:bg-amber-100 transition-colors disabled:opacity-60"
-      >
+    <div className="mi-section">
+      <button className="mi-toggle-btn" onClick={fetchActivities} disabled={loading}>
         {loading ? (
-          <>
-            <span className="animate-spin">⏳</span> 독후활동 생성 중...
-          </>
+          <><Loader2 size={14} className="spin" /> 독후활동 생성 중…</>
         ) : loaded ? (
-          <>🎨 독후활동 닫기</>
+          <><Palette size={14} /> 다중지능 독후활동 닫기</>
         ) : (
-          <>🎨 다중지능 독후활동 보기</>
+          <><Palette size={14} /> 다중지능 독후활동 보기</>
         )}
       </button>
 
-      {/* 활동 목록 */}
       {loaded && activities.length > 0 && (
-        <div className="mt-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-amber-800">
-              📚 《{title}》 다중지능 독후활동
-            </h4>
-            {engine === "claude" && (
-              <span className="text-xs text-amber-500 bg-amber-100 px-2 py-0.5 rounded-full">
-                AI 맞춤 생성
-              </span>
-            )}
+        <div className="mi-panel">
+          <div className="mi-panel-header">
+            <span className="mi-panel-title">《{title}》 다중지능 독후활동</span>
+            {engine === "claude" && <span className="mi-engine-badge">AI 맞춤 생성</span>}
           </div>
 
-          {/* 지능 유형 탭 */}
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="mi-tabs">
             {activities.map((item) => (
               <button
                 key={item.key}
-                onClick={() =>
-                  setSelectedKey(selectedKey === item.key ? null : item.key)
-                }
-                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
-                            border transition-all
-                            ${selectedKey === item.key
-                              ? "bg-amber-600 text-white border-amber-600"
-                              : "bg-white text-amber-700 border-amber-200 hover:bg-amber-100"
-                            }`}
+                className={`mi-tab ${selectedKey === item.key ? "on" : ""}`}
+                onClick={() => setSelectedKey(selectedKey === item.key ? null : item.key)}
               >
                 <span>{item.emoji}</span>
                 <span>{item.name}</span>
@@ -135,29 +125,23 @@ export default function ReadingActivity({
             ))}
           </div>
 
-          {/* 선택된 활동 표시 */}
-          {selectedKey && (() => {
-            const item = activities.find(a => a.key === selectedKey);
+          {selectedKey ? (() => {
+            const item = activities.find((a) => a.key === selectedKey);
             if (!item) return null;
             return (
-              <div className="bg-white rounded-lg p-4 border border-amber-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">{item.emoji}</span>
+              <div className="mi-detail">
+                <div className="mi-detail-head">
+                  <span className="mi-detail-emoji">{item.emoji}</span>
                   <div>
-                    <div className="font-semibold text-amber-800 text-sm">{item.name}</div>
-                    <div className="text-xs text-amber-500">{item.desc}</div>
+                    <div className="mi-detail-name">{item.name}</div>
+                    <div className="mi-detail-desc">{item.desc}</div>
                   </div>
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed">{item.activity}</p>
+                <p className="mi-detail-activity">{item.activity}</p>
               </div>
             );
-          })()}
-
-          {/* 선택 안내 */}
-          {!selectedKey && (
-            <p className="text-xs text-amber-500 text-center py-1">
-              위 버튼을 눌러 원하는 지능 유형의 활동을 확인하세요
-            </p>
+          })() : (
+            <p className="mi-hint">지능 유형을 누르면 맞춤 활동이 나와요</p>
           )}
         </div>
       )}

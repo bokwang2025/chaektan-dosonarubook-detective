@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
-  Search, MapPin, Library, BookOpen, Star, Medal,
+  Search, MapPin, Library, BookOpen, Award, Medal, BadgeCheck, Pencil,
   Sparkles, X, ChevronDown, Loader2, Info,
 } from "lucide-react";
-import { getRelatedKeywords, calcRelevance, rankByRelevance, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank } from "../lib/smartSearch";
+import { getRelatedKeywords, calcRelevance, rankByRelevance, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank, INTL_AWARD_NAMES } from "../lib/smartSearch";
 import libraryCounts from "../data/library_counts.json";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
@@ -80,19 +80,19 @@ const allBooks = booksData as Book[];
 const booksWithIsbn = allBooks.filter((b) => (b.isbn || b.koreanIsbn) && b.isPictureBook === true && b.ageGroup !== "비대상" && !b._excluded);
 
 const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeClass: string; desc: string }> = {
-  "칼데콧":          { label: "🏅 칼데콧",        chipClass: "active-gold",    badgeClass: "badge-caldecott", desc: "미국 최고 그림책 일러스트레이터상. 매년 ALA가 미국 아동 그림책 작가에게 수여. 세계적으로 인정받는 그림책이 많습니다." },
-  "안데르센":        { label: "🌟 안데르센",       chipClass: "active-teal",    badgeClass: "badge-andersen",  desc: "세계 아동문학의 노벨상. 글작가·그림작가 부문으로 나뉘어 2년마다 수상. 전 세계 우수 아동도서 작가를 선정합니다." },
-  "볼로냐":          { label: "🎨 볼로냐",         chipClass: "active-orange",  badgeClass: "badge-bologna",   desc: "이탈리아 볼로냐 국제아동도서전 최우수상. Fiction·Non-fiction·Comics·New Horizons 등 부문별 수상. 예술성 높은 그림책이 많습니다." },
-  "카네기":          { label: "📖 카네기",         chipClass: "active-purple",  badgeClass: "badge-carnegie",  desc: "영국 최고 권위의 아동문학상(요토 카네기). 일러스트레이션 부문(옛 케이트 그린어웨이상) 수상작을 포함합니다." },
-  "국립어린이도서관": { label: "📚 국립어린이도서관", chipClass: "active-green",   badgeClass: "badge-national",  desc: "국립어린이청소년도서관 사서 추천도서. 어린이·청소년 대상 균형 잡힌 독서 목록입니다." },
-  "서울시교육청":    { label: "🏫 서울시교육청",    chipClass: "active",         badgeClass: "badge-edu",       desc: "서울시교육청 교사 추천 도서. 유아~청소년 전 연령 포괄하며 문학·사회·과학 분야가 고루 포함됩니다." },
-  "서울어린이도서관": { label: "🌸 서울어린이도서관", chipClass: "active-pink",    badgeClass: "badge-seoul",     desc: "서울어린이도서관협의회 테마 추천 도서. 이웃·가족 등 생활 주제 중심으로 선정한 그림책·동화가 많습니다." },
-  "국립중앙도서관":  { label: "🏛️ 국립중앙도서관",  chipClass: "active-indigo",  badgeClass: "badge-nlcf",      desc: "국립중앙도서관 사서 추천 우수 문학 도서. 초등 고학년·청소년 대상 문학 작품 중심입니다." },
-  "교과연계도서":    { label: "📝 교과연계도서",    chipClass: "active-brown",   badgeClass: "badge-cur",       desc: "서울시교육청 초등 1~6학년 교과서 연계 도서. 국어·수학·사회·과학 등 교과목별로 분류되어 있습니다." },
-  "학교도서관저널":  { label: "📰 학교도서관저널",  chipClass: "active-slate",   badgeClass: "badge-jnl",       desc: "학교도서관저널 사서 추천도서. 어린이·청소년 도서 전문 잡지에서 선정한 추천목록입니다." },
-  "뉴베리":         { label: "🥇 뉴베리",          chipClass: "active-amber",   badgeClass: "badge-newbery",   desc: "미국 최고 권위의 아동문학상. 매년 ALA가 가장 탁월한 미국 아동도서에 수여합니다." },
-  "그린어웨이":     { label: "🖌️ 그린어웨이",      chipClass: "active-lime",    badgeClass: "badge-greenaway", desc: "영국 최고의 아동 그림책 일러스트상. 케이트 그린어웨이상으로도 알려진 영국판 칼데콧입니다." },
-  "세종도서":       { label: "📗 세종도서",         chipClass: "active-teal",    badgeClass: "badge-sejong",    desc: "문화체육관광부 선정 세종도서. 매년 우수 교양·문학나눔 도서를 선정합니다." },
+  "칼데콧":          { label: "칼데콧",        chipClass: "active-gold",    badgeClass: "badge-caldecott", desc: "미국 최고 그림책 일러스트레이터상. 매년 ALA가 미국 아동 그림책 작가에게 수여. 세계적으로 인정받는 그림책이 많습니다." },
+  "안데르센":        { label: "안데르센",       chipClass: "active-teal",    badgeClass: "badge-andersen",  desc: "세계 아동문학의 노벨상. 글작가·그림작가 부문으로 나뉘어 2년마다 수상. 전 세계 우수 아동도서 작가를 선정합니다." },
+  "볼로냐":          { label: "볼로냐",         chipClass: "active-orange",  badgeClass: "badge-bologna",   desc: "이탈리아 볼로냐 국제아동도서전 최우수상. Fiction·Non-fiction·Comics·New Horizons 등 부문별 수상. 예술성 높은 그림책이 많습니다." },
+  "카네기":          { label: "카네기",         chipClass: "active-purple",  badgeClass: "badge-carnegie",  desc: "영국 최고 권위의 아동문학상(요토 카네기). 일러스트레이션 부문(옛 케이트 그린어웨이상) 수상작을 포함합니다." },
+  "국립어린이도서관": { label: "국립어린이도서관", chipClass: "active-green",   badgeClass: "badge-national",  desc: "국립어린이청소년도서관 사서 추천도서. 어린이·청소년 대상 균형 잡힌 독서 목록입니다." },
+  "서울시교육청":    { label: "서울시교육청",    chipClass: "active",         badgeClass: "badge-edu",       desc: "서울시교육청 교사 추천 도서. 유아~청소년 전 연령 포괄하며 문학·사회·과학 분야가 고루 포함됩니다." },
+  "서울어린이도서관": { label: "서울어린이도서관", chipClass: "active-pink",    badgeClass: "badge-seoul",     desc: "서울어린이도서관협의회 테마 추천 도서. 이웃·가족 등 생활 주제 중심으로 선정한 그림책·동화가 많습니다." },
+  "국립중앙도서관":  { label: "국립중앙도서관",  chipClass: "active-indigo",  badgeClass: "badge-nlcf",      desc: "국립중앙도서관 사서 추천 우수 문학 도서. 초등 고학년·청소년 대상 문학 작품 중심입니다." },
+  "교과연계도서":    { label: "교과연계도서",    chipClass: "active-brown",   badgeClass: "badge-cur",       desc: "서울시교육청 초등 1~6학년 교과서 연계 도서. 국어·수학·사회·과학 등 교과목별로 분류되어 있습니다." },
+  "학교도서관저널":  { label: "학교도서관저널",  chipClass: "active-slate",   badgeClass: "badge-jnl",       desc: "학교도서관저널 사서 추천도서. 어린이·청소년 도서 전문 잡지에서 선정한 추천목록입니다." },
+  "뉴베리":         { label: "뉴베리",          chipClass: "active-amber",   badgeClass: "badge-newbery",   desc: "미국 최고 권위의 아동문학상. 매년 ALA가 가장 탁월한 미국 아동도서에 수여합니다." },
+  "그린어웨이":     { label: "그린어웨이",      chipClass: "active-lime",    badgeClass: "badge-greenaway", desc: "영국 최고의 아동 그림책 일러스트상. 케이트 그린어웨이상으로도 알려진 영국판 칼데콧입니다." },
+  "세종도서":       { label: "세종도서",         chipClass: "active-teal",    badgeClass: "badge-sejong",    desc: "문화체육관광부 선정 세종도서. 매년 우수 교양·문학나눔 도서를 선정합니다." },
 };
 
 // 수상 출처 (뱃지 금/은 구분 적용)
@@ -110,59 +110,71 @@ function ageLabel(age: string): string {
   return age;
 }
 const AGE_TOOLTIP: Record<string, string> = {
-  "미취학":     "미취학 유아 (만 4~7세) — 그림 위주·읽어주기",
-  "초등저학년": "초등 1~3학년 — 또래·일상, 스스로 읽기 시작",
-  "초등고학년": "초등 4~6학년 — 사회·정체성 등 깊은 주제",
+  "미취학":     "만 4~7세 · 출판사 권장연령과 국내외 도서관·수상 기관의 대상 분류를 종합해 나눈 기준이에요. 그림 중심, 어른이 읽어주기 좋은 책",
+  "초등저학년": "초등 1~3학년 · 혼자 읽기를 시작하는 시기 — 또래·학교·일상 이야기 중심으로 분류했어요",
+  "초등고학년": "초등 4~6학년 · 사회·역사·정체성 등 생각할 거리가 있는 주제 — 글밥이 있어도 그림책의 힘이 큰 책들이에요",
 };
 
-// 색상 테마
-const COLOR_THEMES: Record<string, {
-  accent: string; accent2: string; glow: string; label: string;
-  grad1: string; grad2: string; grad3: string;
-  blob1: string; blob2: string;
-}> = {
-  emerald: {
-    accent: "#059669", accent2: "#047857", glow: "rgba(5,150,105,0.18)", label: "🌿 에메랄드",
-    grad1: "#059669", grad2: "#047857", grad3: "#0d9488",
-    blob1: "rgba(5,150,105,0.07)", blob2: "rgba(13,148,136,0.05)",
-  },
-  orange: {
-    accent: "#EA580C", accent2: "#c2410c", glow: "rgba(234,88,12,0.18)", label: "🍊 오렌지",
-    grad1: "#EA580C", grad2: "#dc2626", grad3: "#f43f5e",
-    blob1: "rgba(234,88,12,0.08)", blob2: "rgba(220,38,38,0.05)",
-  },
-  sky: {
-    accent: "#0284C7", accent2: "#0369a1", glow: "rgba(2,132,199,0.18)", label: "🩵 하늘색",
-    grad1: "#0284C7", grad2: "#2563eb", grad3: "#7c3aed",
-    blob1: "rgba(2,132,199,0.07)", blob2: "rgba(37,99,235,0.05)",
-  },
+// 카드용 연령 축약 배지
+const AGE_SHORT: Record<string, string> = {
+  "미취학": "미취학", "초등저학년": "초등저", "초등고학년": "초등고",
+};
+
+// 국제 수상명 축약 + 대표 배지 선정 (배지·+N·추천근거 줄 기준 통일)
+const AWARD_SHORT: Record<string, string> = {
+  "칼데콧": "칼데콧", "안데르센상": "안데르센", "볼로냐라가치상": "볼로냐",
+  "카네기상": "카네기", "케이트 그린어웨이상": "그린어웨이", "뉴베리상": "뉴베리",
+};
+function normAwardCat(cat: string): string {
+  if (!cat) return "";
+  if (/winner/i.test(cat)) return "Winner";
+  if (/honor/i.test(cat)) return "Honor";
+  if (/shortlist/i.test(cat)) return "Shortlist";
+  if (/mention|nominee/i.test(cat)) return "Mention";
+  return cat.replace(/\s+/g, "");
+}
+/** 등급: 0=Winner·작가상(골드) / 1=Honor / 2=Shortlist 등(실버) */
+function awardRank(cat: string): number {
+  if (/honor/i.test(cat)) return 1;
+  if (/shortlist|mention|nominee/i.test(cat)) return 2;
+  return 0;
+}
+function pickDisplayBadge(book: Book): { label: string; cls: string; gold: boolean; intl: boolean } {
+  const intl = (book.awards ?? []).filter((a) => INTL_AWARD_NAMES.has(a.name));
+  if (intl.length > 0) {
+    const best = [...intl].sort((a, b) =>
+      awardRank(a.category) - awardRank(b.category) ||
+      (parseInt(b.year) || 0) - (parseInt(a.year) || 0)
+    )[0];
+    const gold = awardRank(best.category) === 0;
+    const label = [AWARD_SHORT[best.name] ?? best.name, normAwardCat(best.category), best.year]
+      .filter(Boolean).join(" ");
+    return { label, cls: gold ? "badge-seal-gold" : "badge-seal-silver", gold, intl: true };
+  }
+  const domSrc = (book.sources ?? [book.source]).find((s) => !AWARD_SOURCES.has(s)) ?? book.source;
+  return { label: SOURCE_CONFIG[domSrc]?.label ?? domSrc, cls: "badge-neutral", gold: false, intl: false };
+}
+
+// 둘러보기 카드 (검색 영역 재디자인)
+const COLLECTION_GROUPS = [
+  { key: "국제수상", hanja: "賞", title: "국제수상", desc: "세계가 인정한 그림책",
+    iconCls: "browse-icon-gold", tip: "칼데콧 · 안데르센 · 볼로냐 · 카네기",
+    sources: ["칼데콧", "안데르센", "볼로냐", "카네기"] },
+  { key: "사서추천", hanja: "推", title: "사서추천", desc: "도서관이 권하는 책",
+    iconCls: "browse-icon-teal", tip: "국립중앙 · 국립어린이 · 서울어린이 · 서울시교육청 · 세종도서",
+    sources: ["국립중앙도서관", "국립어린이도서관", "서울어린이도서관", "서울시교육청", "세종도서"] },
+  { key: "교과연계", hanja: "校", title: "교과연계", desc: "수업과 이어지는 책",
+    iconCls: "browse-icon-blue", tip: "교과연계도서 · 학교도서관저널",
+    sources: ["교과연계도서", "학교도서관저널"] },
+];
+
+const AGE_CARD: Record<string, { title: string; sub: string }> = {
+  "미취학":     { title: "미취학",     sub: "4~7세" },
+  "초등저학년": { title: "초등 저학년", sub: "1~3학년" },
+  "초등고학년": { title: "초등 고학년", sub: "4~6학년" },
 };
 
 // ─── 배지 레이블 압축 ───────────────────────────────────────
-/**
- * sourceLabel을 카드 배지용으로 압축
- * "칼데콧 Winner (2026) · 원서추천" → "칼데콧 Winner 2026"
- * "볼로냐 Winner (sustainability special category) (2025) · 원서추천" → "볼로냐 Winner 2025"
- * "안데르센 글 작가 (2026)" → "안데르센 글작가 2026"
- */
-function compactLabel(sourceLabel: string, awardYear?: string): string {
-  if (!sourceLabel) return "";
-  // "· 원서추천" 제거
-  let s = sourceLabel.replace(/\s*·\s*원서추천.*$/, "").trim();
-  // 연도 추출 (마지막 괄호 연도 우선)
-  const yearMatch = s.match(/\((\d{4})\)(?:\s*\(\d{4}\))*\s*$/);
-  const year = yearMatch?.[1] || awardYear || "";
-  // 모든 괄호 내용 제거
-  s = s.replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
-  // Winner/Honor/Shortlist/Mention/글 작가/그림 작가 이후 긴 텍스트 제거
-  const statusMatch = s.match(/^(\S+(?:\s+\S+)?)\s+(Winner|Honor|Shortlist|Mention|Nominee|글\s*작가|그림\s*작가)/i);
-  if (statusMatch) {
-    s = `${statusMatch[1]} ${statusMatch[2].replace(/\s+/g, "")}`;
-  }
-  // 라벨에 이미 연도(예: 학교도서관저널 202412)가 포함되어 있으면 연도를 다시 붙이지 않음
-  return (year && !s.includes(year)) ? `${s} ${year}` : s;
-}
-
 // ─── W1용: 국제 수상 개수 (smartSearch 중앙 함수 재사용) ─────
 
 // ─── 초기 표시용: 표지 확인된 책만, 출처 다양 + 중복수상 최우선 ──────────
@@ -183,33 +195,17 @@ export default function Home() {
   const [query,           setQuery]          = useState("");
   const [selectedAges,    setSelectedAges]   = useState<string[]>([]);
   const [selectedSources, setSelectedSources]= useState<string[]>([]);
-  const [colorTheme,      setColorTheme]     = useState<string>("emerald");
-
-  // 색상 테마 적용
-  useEffect(() => {
-    const t = COLOR_THEMES[colorTheme];
-    if (!t) return;
-    const root = document.documentElement;
-    root.style.setProperty("--accent",  t.accent);
-    root.style.setProperty("--accent2", t.accent2);
-    root.style.setProperty("--glow",    t.glow);
-    root.style.setProperty("--grad-1",  t.grad1);
-    root.style.setProperty("--grad-2",  t.grad2);
-    root.style.setProperty("--grad-3",  t.grad3);
-    root.style.setProperty("--blob-1",  t.blob1);
-    root.style.setProperty("--blob-2",  t.blob2);
-  }, [colorTheme]);
   const [searchMode,      setSearchMode]     = useState<"keyword"|"ai">("keyword");
   const [showKoreanOnly,  setShowKoreanOnly] = useState(false);
   const [books,           setBooks]          = useState<Book[]>(INITIAL_BOOKS);
   const [resultCount,     setResultCount]    = useState<number>(INITIAL_BOOKS.length);
-  const [locationDenied,  setLocationDenied] = useState(false);
   const [aiMode,         setAiMode]         = useState(false);
   const [aiEngine,       setAiEngine]       = useState<"claude"|"smart"|"">("");
   const [aiLoading,      setAiLoading]      = useState(false);
   const [aiError,        setAiError]        = useState("");
   const [selectedBook,   setSelectedBook]   = useState<Book | null>(null);
   const [detailBook,     setDetailBook]     = useState<Book | null>(null);
+  const [detailAutoActivity, setDetailAutoActivity] = useState(false);
   const [summary,        setSummary]        = useState<string>("");
   const [summaryIsEstimate, setSummaryIsEstimate] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -221,7 +217,6 @@ export default function Home() {
   const [smallLibraries,    setSmallLibraries]    = useState<SmallLibInfo[]>([]);
   const [smallLibLoading,   setSmallLibLoading]   = useState(false);
   const [userLocation,   setUserLocation]   = useState<{lat:number;lng:number}|null>(null);
-  const [locationLabel,  setLocationLabel]  = useState("내 위치로 도서관 찾기");
   const [locationError,  setLocationError]  = useState("");
   const [showAll,        setShowAll]        = useState(false);
   const [weightOpenIds,  setWeightOpenIds]  = useState<Set<string>>(new Set());
@@ -412,7 +407,7 @@ export default function Home() {
       if (data.error) throw new Error(data.error);
       setAiEngine(data.engine || "smart");
 
-      let aiBooks: Book[] = data.results
+      const aiBooks: Book[] = data.results
         .map((r: { id: string; reason: string }) => {
           const book = allBooks.find((b) => b.id === r.id);
           return book ? { ...book, aiReason: r.reason } : null;
@@ -467,38 +462,18 @@ export default function Home() {
       prev.includes(src) ? prev.filter((s) => s !== src) : [...prev, src]
     );
   };
+  const toggleGroup = (sources: string[]) => {
+    setAiMode(false);
+    setSelectedSources((prev) => {
+      const anyOn = sources.some((s) => prev.includes(s));
+      return anyOn
+        ? prev.filter((s) => !sources.includes(s))
+        : [...prev, ...sources.filter((s) => !prev.includes(s))];
+    });
+  };
   const clearAllFilters = () => {
     setQuery(""); setSelectedSources([]); setSelectedAges([]);
     setActiveTags([]); setSortModes([]); setAiMode(false);
-  };
-
-  // ── 위치 가져오기 ───────────────────────────
-  const handleGetLocation = () => {
-    setLocationLabel("위치 확인 중…"); setLocationError("");
-    if (!navigator.geolocation) {
-      setLocationLabel("위치 미지원"); setLocationError("이 브라우저는 위치 서비스를 지원하지 않습니다.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocationLabel("위치 확인됨 ✓");
-        setLocationDenied(false);
-        setLocationError("");
-      },
-      (err) => {
-        if (err.code === 1) {
-          // 권한 거부 → 위치 없이도 전국 도서관 검색 가능하므로 안내만
-          setLocationDenied(true);
-          setLocationLabel("위치 없이 검색");
-          setLocationError("위치 권한 없이도 도서관 검색이 가능해요. (가까운 순서 정렬은 위치 허용 후 가능)");
-        } else {
-          setLocationLabel("위치 확인 실패");
-          setLocationError(err.code === 3 ? "위치 확인 시간이 초과됐어요. 다시 시도해주세요." : "현재 위치를 확인할 수 없어요.");
-        }
-      },
-      { timeout: 10000, maximumAge: 60000 }
-    );
   };
 
   // ── 도서관 조회 — 브라우저에서 data4library.kr 직접 호출 (CORS: *) ──
@@ -641,8 +616,9 @@ export default function Home() {
   };
 
   // ── 상세페이지 열기 (줄거리 AI 생성) ──────────
-  const openDetail = async (book: Book) => {
+  const openDetail = async (book: Book, autoActivity = false) => {
     setDetailBook(book);
+    setDetailAutoActivity(autoActivity);
     // 저장된 줄거리(고정본) 우선 — 라이브 생성 폐기로 환각·변동 제거
     if ((book.summary || "").trim()) {
       setSummary(book.summary as string);
@@ -682,8 +658,6 @@ export default function Home() {
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLocation(loc);
-        setLocationLabel("위치 확인됨 ✓");
-        setLocationDenied(false);
         setLocationError("");
         // 위치 허용 즉시 현재 선택된 책으로 재조회
         if (selectedBook) {
@@ -700,6 +674,10 @@ export default function Home() {
   };
 
 
+  const hasAnyFilter =
+    Boolean(query.trim()) || selectedAges.length > 0 ||
+    selectedSources.length > 0 || activeTags.length > 0;
+
   // ── 렌더 ───────────────────────────────────
   return (
     <main>
@@ -707,15 +685,9 @@ export default function Home() {
 
       {/* 헤더 */}
       <section className="hero">
-        <h1 className="title-gradient">책탐정 도서나루</h1>
-        <p className="app-tagline">수상·추천으로 선별된 도서 + 가중치 기반 추천 + 다중지능 독후활동 + 가까운 도서관 안내</p>
-        <p className="app-tagline-sub">동화구연 13년 전문가의 책 선별·활동 설계 노하우를 AI로</p>
-        <p className="subtitle">
-          칼데콧·안데르센 등 국제 아동문학상과 국내 공신력 있는 기관이<br />
-          직접 감별한 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> 중에서,<br />
-          인기순이 아닌 <strong>진짜 좋은 책</strong>을 주제·감정·상황으로 찾고<br />
-          내 근처 도서관의 <strong>대출 가능 여부</strong>를 바로 확인하세요.
-        </p>
+        <h1 className="wordmark">책탐정 도서나루</h1>
+        <p className="app-tagline">수상·추천으로 고른 그림책, 가까운 도서관까지</p>
+        <p className="stat-pill">검증된 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> · 국제 4대 상 + 국내 추천 7기관</p>
 
         {/* 앱 소개 토글 */}
         <button className="about-toggle" onClick={() => setShowAbout(v => !v)}>
@@ -724,11 +696,11 @@ export default function Home() {
         {showAbout && (
           <div className="about-panel">
             <div className="about-section">
-              <strong>📖 이 서비스를 만든 이야기</strong>
+              <strong>이 서비스를 만든 이야기</strong>
               <p>동화구연봉사자로 활동하며 아이들에게 좋은 책을 읽어주고 싶다는 마음, 하지만 <strong>&ldquo;어떤 책이 진짜 좋은 책인가&rdquo;</strong>라는 고민이 늘 있었습니다. 베스트셀러나 인기도서가 아니라, <strong>전문가들이 감별한 책</strong>을 찾고 싶었습니다. 그래서 칼데콧·안데르센 등 세계 권위 있는 아동문학상 수상작과, 국립어린이도서관·서울시교육청 등 <strong>공신력 있는 기관이 엄선한 추천도서</strong>로 목록을 구성했습니다. &ldquo;내 주제에 맞는 책을 빠르게 찾고, 줄거리를 파악해서, 가까운 도서관에서 바로 빌릴 수 있으면&rdquo;이라는 바람도 함께 담았습니다. 매년 국제 시상식이 열리는 <strong>상반기에 업데이트</strong>할 예정입니다.</p>
             </div>
             <div className="about-sources">
-              <strong>🏆 수상·추천 컬렉션별 특징</strong>
+              <strong>수상·추천 컬렉션별 특징</strong>
               <ul>
                 {(["칼데콧","안데르센","볼로냐","카네기","국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서","교과연계도서","학교도서관저널"] as const).map((src) => {
                   const cfg = SOURCE_CONFIG[src];
@@ -741,60 +713,67 @@ export default function Home() {
         )}
 
         <div className="controls-container">
-          {/* 수정 8: 통합 검색창 (탭 제거, 자동 AI/키워드 구분) */}
-          <div className="search-row">
-            <div className="search-input-wrapper">
-              {aiMode
-                ? <Sparkles size={17} className="search-icon search-icon-ai" />
-                : <Search size={17} className="search-icon" />}
-              <input
-                type="text" className="search-input"
-                placeholder="책 제목·작가, 또는 상황·기분을 자유롭게 입력 (예: 친구와 다툰 아이에게)"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  if (aiMode) resetAi();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && query.trim()) {
-                    // 자연어 감지: 공백 포함 or 12자 이상 → AI 검색
-                    const words = query.trim().split(/\s+/);
-                    if (words.length >= 3 || query.trim().length >= 12) {
-                      handleAiSearch();
-                    }
+          {/* 통합 검색창 — 큰 단일 입력 + AI 버튼 내장 */}
+          <div className="search-hero">
+            {aiMode
+              ? <Sparkles size={18} className="search-icon search-icon-ai" />
+              : <Search size={18} className="search-icon" />}
+            <input
+              type="text" className="search-input search-input-hero"
+              placeholder="어떤 책을 찾으세요? 상황·감정·제목·작가 무엇이든 적어 보세요"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                if (aiMode) resetAi();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && query.trim()) {
+                  const words = query.trim().split(/\s+/);
+                  if (words.length >= 3 || query.trim().length >= 12) {
+                    handleAiSearch();
                   }
-                }}
-              />
-              {query && (
-                <button className="clear-btn" onClick={() => { setQuery(""); setActiveTags([]); resetAi(); }}>
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-            {(query.trim() || activeTags.length > 0) && (
-              <button className="reset-search-btn" onClick={() => { setQuery(""); setActiveTags([]); resetAi(); }} title="검색어·태그 초기화">
-                <X size={13} /> 검색 초기화
+                }
+              }}
+            />
+            {query && (
+              <button className="clear-btn" onClick={() => { setQuery(""); setActiveTags([]); resetAi(); }}>
+                <X size={12} />
               </button>
             )}
             <button
-              className={`ai-btn ${aiLoading ? "loading" : ""}`}
+              className="ai-inset-btn"
               onClick={() => handleAiSearch()}
               disabled={aiLoading || !query.trim()}
               title="AI가 상황·감정으로 책을 추천합니다"
             >
               {aiLoading
-                ? <><Loader2 size={15} className="spin" /> 분석 중…</>
-                : <><Sparkles size={15} /> AI 추천</>}
+                ? <><Loader2 size={13} className="spin" /> 분석 중</>
+                : <><Sparkles size={13} /> AI 추천</>}
             </button>
           </div>
 
-          {(query.trim() || activeTags.length > 0 || selectedSources.length > 0 || selectedAges.length > 0 || showKoreanOnly) && !aiMode && (
-            <div style={{ fontSize: ".85rem", color: "var(--text-sub)", margin: ".1rem 0 .25rem", paddingLeft: ".25rem" }}>
-              <strong style={{ color: "var(--text)" }}>{resultCount.toLocaleString()}권</strong>의 그림책이 검색되었어요
+          {/* 검색 예시 — 유형 라벨로 검색 범위 안내 */}
+          {!query && (
+            <div className="search-examples">
+              <span className="search-examples-label">상황·감정뿐 아니라 책 제목이나 작가 이름으로도 찾을 수 있어요</span>
+              <div className="search-example-chips">
+                <button className="example-chip" onClick={() => handleAiSearch("용기를 주는 책")}>
+                  용기를 주는 책 <span className="example-type">상황</span>
+                </button>
+                <button className="example-chip" onClick={() => handleAiSearch("동생이 생긴 아이에게")}>
+                  동생이 생긴 아이에게 <span className="example-type">감정</span>
+                </button>
+                <button className="example-chip" onClick={() => setQuery("강아지똥")}>
+                  강아지똥 <span className="example-type">제목</span>
+                </button>
+                <button className="example-chip" onClick={() => setQuery("백희나")}>
+                  백희나 <span className="example-type">작가</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* 활성 태그 + 연관 태그 (통합 검색) */}
+          {/* 활성 태그 + 연관 태그 */}
           {!aiMode && (
             <>
               {activeTags.length > 0 && (
@@ -824,141 +803,70 @@ export default function Home() {
             </>
           )}
 
-          {/* AI 예시 검색어 */}
-          {!query && (
-            <div className="ai-examples">
-              <span className="ai-examples-label">이렇게 물어보세요</span>
-              {[
-                "전학 가서 외로운 아이에게",
-                "용기를 내야 할 때",
-                "동생이 생긴 아이에게",
-                "자연과 환경을 느끼고 싶을 때",
-                "친구와 화해하는 법",
-              ].map((ex) => (
-                <button key={ex} className="ai-example-chip"
-                  onClick={() => handleAiSearch(ex)}>
-                  {ex}
-                </button>
-              ))}
+          {/* 컬렉션으로 둘러보기 */}
+          <div className="browse-section">
+            <div className="browse-header">
+              <span className="browse-title">컬렉션으로 둘러보기</span>
+              <span className="browse-hint">마우스를 올리면 포함된 출처가 떠요</span>
             </div>
-          )}
-
-          {/* 수정 7: 컬렉션 탭 3그룹 */}
-          <div className="collection-section">
-            <div className="collection-header">
-              <span className="collection-title">🏆 수상·추천 컬렉션</span>
-              <span className="collection-sub">전체 또는 특정 컬렉션에서 검색</span>
+            <div className="browse-cards">
+              {COLLECTION_GROUPS.map((g) => {
+                const isOn = g.sources.some((src) => selectedSources.includes(src));
+                return (
+                  <button
+                    key={g.key}
+                    className={`browse-card ${isOn ? "on" : ""}`}
+                    onClick={() => toggleGroup(g.sources)}
+                    data-tooltip={g.tip}
+                  >
+                    <span className={`browse-icon ${g.iconCls}`}>{g.hanja}</span>
+                    <span className="browse-card-title">{g.title}</span>
+                    <span className="browse-card-desc">{g.desc}</span>
+                  </button>
+                );
+              })}
             </div>
-            {([
-              { label: "🏆 국제 수상", sources: ["칼데콧","안데르센","볼로냐","카네기"] },
-              { label: "🏛 사서 추천", sources: ["국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서"] },
-              { label: "📖 교육 기관", sources: ["교과연계도서","학교도서관저널"] },
-            ] as const).map(group => (
-              <div key={group.label} className="collection-group">
-                <span className="collection-group-label">{group.label}</span>
-                <div className="filter-chips" style={{ flexWrap: "wrap" }}>
-                  {group.sources.map(src => {
-                    const cfg = SOURCE_CONFIG[src];
-                    if (!cfg) return null;
-                    return (
-                      <button
-                        key={src}
-                        className={`chip ${selectedSources.includes(src) ? cfg.chipClass : ""}`}
-                        onClick={() => toggleSource(src)}
-                        data-tooltip={cfg.desc}
-                      >{cfg.label}</button>
-                    );
-                  })}
-                </div>
+            {COLLECTION_GROUPS.filter((g) => g.sources.some((src) => selectedSources.includes(src))).map((g) => (
+              <div key={g.key} className="browse-detail-chips">
+                <span className="browse-detail-label">{g.title} 세부</span>
+                {g.sources.map((src) => {
+                  const cfg = SOURCE_CONFIG[src];
+                  if (!cfg) return null;
+                  return (
+                    <button
+                      key={src}
+                      className={`chip ${selectedSources.includes(src) ? "active" : ""}`}
+                      onClick={() => toggleSource(src)}
+                      data-tooltip={cfg.desc}
+                    >{cfg.label}</button>
+                  );
+                })}
               </div>
             ))}
           </div>
 
-          {/* 연령 필터 */}
-          <div className="filter-row">
-            <span className="filter-label">연령</span>
-            <div className="filter-chips">
-              {availableAges.map((age) => (
-                <button
-                  key={age}
-                  className={`chip ${selectedAges.includes(age) ? "active" : ""} ${age === "어린이" ? "chip-age-broad" : ""}`}
-                  onClick={() => toggleAge(age)}
-                  data-tooltip={AGE_TOOLTIP[age]}
-                >
-                  {ageLabel(age)}
-                  {age === "어린이" && <span className="chip-age-sub">초1~6</span>}
-                </button>
-              ))}
+          {/* 연령으로 둘러보기 */}
+          <div className="browse-section">
+            <div className="browse-header">
+              <span className="browse-title">연령으로 둘러보기</span>
             </div>
-          </div>
-
-          {/* 정렬 (복수 선택 가능 — 선택 순서가 우선순위) */}
-          <div className="filter-row sort-row">
-            <span className="filter-label">정렬</span>
-            <div className="filter-chips" style={{ alignItems: "center", gap: ".35rem" }}>
-              {(selectedSources.length > 0 || selectedAges.length > 0 || activeTags.length > 0 || sortModes.length > 0 || query.trim() || showKoreanOnly) && (
-                <button className="reset-all-prominent-btn" onClick={clearAllFilters} title="컬렉션·연령·태그·정렬·검색어 모두 해제">
-                  ✕ 전체 해제
-                </button>
-              )}
-              {sortModes.length > 0 && (
-                <button className="sort-clear-btn" onClick={() => { setSortModes([]); setAiMode(false); }}>
-                  정렬 초기화
-                </button>
-              )}
-              {(
-                [
-                  { key: "recent",  label: "📅 최신 출간",         title: "출판연도 기준 최신순으로 정렬" },
-                  { key: "library", label: "📊 도서관 인기 대출",   title: "전국 도서관 보유 수가 많은 책 우선\n다수 수상·추천 가중치는 기본 적용됩니다" },
-                  { key: "multi",   label: "🇰🇷 국내 출간 우선",    title: "한국어판이 출간된 책을 앞에 표시" },
-                ] as const
-              ).map(({ key, label, title }) => {
-                const idx = sortModes.indexOf(key);
-                const isActive = idx >= 0;
+            <div className="browse-cards">
+              {availableAges.map((age) => {
+                const card = AGE_CARD[age] ?? { title: age, sub: "" };
                 return (
                   <button
-                    key={key}
-                    className={`chip sort-chip ${isActive ? "active" : ""}`}
-                    onClick={() => {
-                      setSortModes((prev) =>
-                        prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-                      );
-                      setAiMode(false);
-                    }}
-                    data-tooltip={title}
+                    key={age}
+                    className={`browse-card browse-card-age ${selectedAges.includes(age) ? "on" : ""}`}
+                    onClick={() => toggleAge(age)}
+                    data-tooltip={AGE_TOOLTIP[age]}
                   >
-                    {isActive && <span className="sort-priority">{idx + 1}</span>}
-                    {label}
+                    <span className="browse-card-title">{card.title}</span>
+                    <span className="browse-card-desc">{card.sub}</span>
                   </button>
                 );
               })}
-              {sortModes.length > 1 && (
-                <span className="sort-hint">← 왼쪽부터 주정렬</span>
-              )}
             </div>
           </div>
-
-          {/* 위치 버튼 */}
-          <div className="filter-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".4rem" }}>
-            <div style={{ display: "flex", gap: ".6rem", alignItems: "center", flexWrap: "wrap" }}>
-              <button
-                className={`location-btn ${userLocation ? "located" : locationDenied ? "denied" : ""}`}
-                onClick={handleGetLocation}
-              >
-                <MapPin size={15} />
-                {locationLabel}
-              </button>
-              {locationDenied && (
-                <span style={{ fontSize: ".75rem", color: "var(--text-sub)" }}>
-                  📍 위치 없어도 도서관 검색 가능 (가까운 순 정렬은 위치 허용 시)
-                </span>
-              )}
-            </div>
-            {locationError && !locationDenied && (
-              <span className="location-error-msg">{locationError}</span>
-            )}
-          </div>
-
         </div>
 
         {/* K: AI 배너 1줄 슬림 */}
@@ -966,7 +874,7 @@ export default function Home() {
           <div className="ai-banner-slim">
             <Sparkles size={13} />
             <span className="ai-banner-slim-text">
-              {aiEngine === "claude" ? "✨ Claude AI 추천" : "🔍 스마트 검색 결과"}
+              {aiEngine === "claude" ? "Claude AI 추천" : "스마트 검색 결과"}
               {" · "}<strong>{books.length}권</strong>
             </span>
             <button className="ai-banner-slim-close" onClick={resetAi}><X size={11} /> 일반 검색</button>
@@ -976,27 +884,71 @@ export default function Home() {
         {aiMode && aiLoading && (
           <div className="ai-banner-slim ai-banner-loading">
             <Loader2 size={13} className="spin" />
-            <span className="ai-banner-slim-text">🤖 AI가 더 좋은 결과를 찾고 있어요…</span>
+            <span className="ai-banner-slim-text">AI가 더 좋은 결과를 찾고 있어요…</span>
           </div>
         )}
         {aiError && <div className="error-banner">{aiError}</div>}
       </section>
 
-      {/* 추천 도서 라벨 — 필터/검색 없는 기본 상태 */}
-      {!query.trim() && !aiMode && selectedSources.length === 0 && selectedAges.length === 0 && (
-        <div className="rec-label-row">
-          <span className="rec-label-title">📚 추천 도서</span>
-          <span className="rec-label-desc">
-            🏆 국제 수상 × 📚 사서 추천 × 🏛 도서관 보유율 가중치 순으로 보여드려요
-          </span>
+      {/* 도서 그리드 헤더: 제목 + 정렬 필 */}
+      {!aiMode && (
+        <div className="grid-header">
+          <div className="grid-header-left">
+            <span className="grid-title">
+              {hasAnyFilter ? `검색 결과 ${resultCount.toLocaleString()}권` : "오늘의 추천 그림책"}
+            </span>
+            {!hasAnyFilter && (
+              <span className="grid-sub">국제 수상 · 사서 추천 · 공공도서관 보유율을 종합한 추천 순</span>
+            )}
+          </div>
+          <div className="grid-header-right">
+            {(hasAnyFilter || sortModes.length > 0) && (
+              <button className="reset-all-prominent-btn" onClick={clearAllFilters} title="컬렉션·연령·태그·정렬·검색어 모두 해제">
+                ✕ 전체 해제
+              </button>
+            )}
+            <div className="sort-pills">
+              <button
+                className={`sort-pill ${sortModes.length === 0 ? "on" : ""}`}
+                onClick={() => { setSortModes([]); setAiMode(false); }}
+                data-tooltip="국제 수상 횟수 × 추천 기관 수 × 전국 공공도서관 보유율을 종합한 기본 정렬이에요"
+              >추천순</button>
+              {(
+                [
+                  { key: "library", label: "인기 대출",      title: "전국 공공도서관이 많이 소장한 책부터 — 도서관정보나루 보유 데이터 기준이에요" },
+                  { key: "recent",  label: "최신 출간",      title: "출판 연도가 최신인 책부터 보여드려요" },
+                  { key: "multi",   label: "국내 출간 우선", title: "한국어판이 출간된 책을 앞에 보여드려요 — 원서만 있는 책은 뒤로 가요" },
+                ] as const
+              ).map(({ key, label, title }) => {
+                const idx = sortModes.indexOf(key);
+                const isActive = idx >= 0;
+                return (
+                  <button
+                    key={key}
+                    className={`sort-pill ${isActive ? "on" : ""}`}
+                    onClick={() => {
+                      setSortModes((prev) =>
+                        prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+                      );
+                      setAiMode(false);
+                    }}
+                    data-tooltip={title}
+                  >
+                    {isActive && sortModes.length > 1 && <span className="sort-priority">{idx + 1}</span>}
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
       {/* 도서 그리드 */}
       <section className="book-grid">
         {books.map((book) => (
-          <div className="book-card" key={book.id}>
-            <div style={{ cursor: "pointer" }} onClick={() => openDetail(book)}>
+          <div className="book-card" key={book.id} onClick={() => openDetail(book)}>
+            <div>
               <BookCover
                 isbn={book.koreanIsbn || book.isbn}
                 title={book.koreanTitle}
@@ -1010,84 +962,58 @@ export default function Home() {
             </div>
 
             {(() => {
-              const isAward = AWARD_SOURCES.has(book.source);
-              const isWinner = book.awardCategory === "Winner";
-              const badgeClass = isAward
-                ? (isWinner ? "badge-award-winner" : "badge-award-honor")
-                : (SOURCE_CONFIG[book.source]?.badgeClass || "badge-default");
-              // 추가 출처: sources 배열에서 primary source 제외
-              const extraSources = (book.sources || []).filter(s => s !== book.source).slice(0, 3);
+              const badge = pickDisplayBadge(book);
+              const total = countIntlAwards(book) + recommendationCount(book);
+              const extra = Math.max(0, total - 1);
               return (
                 <div className="badge-row">
-                  <div className={`source-badge ${badgeClass}`}>
-                    {isAward && isWinner
-                      ? <Star size={11} />
-                      : isAward
-                      ? <Medal size={11} />
+                  <div className={`source-badge ${badge.cls}`}>
+                    {badge.intl
+                      ? (badge.gold ? <Award size={11} /> : <Medal size={11} />)
                       : <BookOpen size={11} />}
-                    {compactLabel(book.sourceLabel, book.awardYear)}
+                    {badge.label}
                   </div>
-                  {extraSources.map((src) => {
-                    const cfg = SOURCE_CONFIG[src];
-                    const isIntl = AWARD_SOURCES.has(src);
-                    return (
-                      <div key={src}
-                        className={`source-badge source-badge-sm ${cfg?.badgeClass || "badge-default"}`}>
-                        {isIntl ? <Medal size={10} /> : <BookOpen size={10} />}
-                        {cfg?.label.replace(/^[^\s]+\s/, "") || src}
-                      </div>
-                    );
-                  })}
-                  {(book.sources?.length ?? 0) - 1 > 3 && (
-                    <div className="source-badge source-badge-sm badge-default">
-                      +{(book.sources?.length ?? 0) - 1 - 3}
+                  {extra > 0 && (
+                    <div className="source-badge source-badge-sm badge-neutral"
+                      title={`이 외 수상·추천 ${extra}건 — 카드를 눌러 확인하세요`}>
+                      +{extra}
+                    </div>
+                  )}
+                  {book.ageGroup && AGE_SHORT[book.ageGroup] && (
+                    <div className="source-badge badge-age" title={AGE_TOOLTIP[book.ageGroup]}>
+                      {AGE_SHORT[book.ageGroup]}
                     </div>
                   )}
                 </div>
               );
             })()}
 
-            <h3 className="book-title" style={{ cursor: "pointer" }} onClick={() => openDetail(book)}>{book.koreanTitle}</h3>
+            <h3 className="book-title">{book.koreanTitle}</h3>
             {book.originalTitle && book.originalTitle !== book.koreanTitle && (
               <div className="book-original">{book.originalTitle}</div>
             )}
 
             <div className="book-meta">
-              <span>{book.author}</span>
+              <span className="book-author" title={book.author}>{book.author}</span>
             </div>
 
             {book.hook && (
               <div className="hook-text">{book.hook}</div>
             )}
 
-            {/* 가중치 토글 */}
             {(() => {
-              const w1 = awardWeight(book), w2 = recommendationWeight(book), w3 = libraryWeight(book);
-              if (w1 === 1.0 && w2 === 1.0 && w3 === 1.0) return null;
               const aw = countIntlAwards(book);
               const recoN = recommendationCount(book);
               const lr = getLibRank(book);
-              const total = Math.round(w1 * w2 * w3 * 100) / 100;
-              const isOpen = weightOpenIds.has(book.id);
+              const parts: string[] = [];
+              if (aw > 0) parts.push(`국제 수상 ${aw}회`);
+              if (recoN > 0) parts.push(`추천기관 ${recoN}곳`);
+              if (lr) parts.push(`보유 상위 ${lr.pct}%`);
+              if (parts.length === 0) return null;
               return (
-                <div className="weight-toggle-wrap">
-                  <button className="weight-toggle-btn" onClick={() => toggleWeight(book.id)}>
-                    📊 추천 이유 {isOpen ? "▲" : "▼"}
-                  </button>
-                  {isOpen && (
-                    <div className="weight-detail">
-                      <div className={w1 > 1.0 ? "weight-row active" : "weight-row dim"}>
-                        🏆 국제 수상: ×{w1.toFixed(1)} ({aw}개 수상)
-                      </div>
-                      <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>
-                        📚 추천 기관: ×{w2.toFixed(1)} ({recoN}개 기관)
-                      </div>
-                      <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>
-                        🏛 도서관 보유: ×{w3.toFixed(1)} {lr ? `(전국 보유 상위 ${lr.pct}% · ${lr.count}관)` : "(보유 데이터 없음)"}
-                      </div>
-                      <div className="weight-total">합산 가중치 ×{total}</div>
-                    </div>
-                  )}
+                <div className="cred-line" title="카드를 누르면 추천 근거와 상세 정보를 볼 수 있어요">
+                  <BadgeCheck size={12} />
+                  <span>{parts.join(" · ")}</span>
                 </div>
               );
             })()}
@@ -1109,48 +1035,26 @@ export default function Home() {
               }
               return (
                 <div className="hook-text hook-text-hint" onClick={() => openDetail(book)}>
-                  📖 줄거리 보기를 눌러 내용을 확인하세요
+                  카드를 눌러 줄거리를 확인하세요
                 </div>
               );
             })()}
 
-            {(book.ageGroup || book.tags.length > 0) && (
-              <div className="tags-container">
-                {book.ageGroup && (
-                  <span className="tag-chip tag-chip-age">
-                    {ageLabel(book.ageGroup)}
-                  </span>
-                )}
-                {book.activity && book.activity.trim() && (
-                  <span
-                    className="tag-chip tag-chip-activity"
-                    title={book.activity}
-                    onClick={(e) => { e.stopPropagation(); openDetail(book); }}
-                    style={{ cursor: "pointer", maxWidth: "100%" }}
-                  >
-                    ✏️ {book.activity.slice(0, 38)}{book.activity.length > 38 ? "… 더보기" : ""}
-                  </span>
-                )}
-                {getBookFormats(book).map(fmt => (
-                  <span key={fmt.key} className="tag-chip tag-chip-format" title={fmt.label}>
-                    {fmt.emoji} {fmt.label}
-                  </span>
-                ))}
-                {book.tags.slice(0, 5).map((t, i) => (
-                  <button key={i} className="tag-chip" onClick={() => addActiveTag(t)}>
-                    #{t}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <div className="card-btns">
-              <button className="detail-btn" onClick={() => openDetail(book)}>
-                <BookOpen size={13} />
-                줄거리 보기
+              <button
+                className="library-btn activity-btn"
+                title="이 책으로 할 수 있는 다중지능 독후활동을 봐요"
+                onClick={(e) => { e.stopPropagation(); openDetail(book, true); }}
+              >
+                <Pencil size={13} />
+                독후활동
               </button>
-              <button className="library-btn" onClick={() => handleCheckLibrary(book)}>
-                <Library size={13} />
+              <button
+                className="library-btn cta-btn"
+                title="내 주변 도서관의 대출 가능 여부를 확인해요"
+                onClick={(e) => { e.stopPropagation(); handleCheckLibrary(book); }}
+              >
+                <Library size={14} />
                 도서관 확인
               </button>
             </div>
@@ -1162,7 +1066,7 @@ export default function Home() {
             {aiMode ? (
               <>
                 <Sparkles size={36} className="empty-ai-icon" />
-                <p>"{query}"에 맞는 책을 찾지 못했어요.</p>
+                <p>&ldquo;{query}&rdquo;에 맞는 책을 찾지 못했어요.</p>
                 <small>
                   {showKoreanOnly || selectedAges.length > 0 || selectedSources.length > 0
                     ? "필터 범위 안에서 적합한 책을 찾지 못했어요. 필터를 해제하거나 검색어를 바꿔보세요."
@@ -1258,13 +1162,13 @@ export default function Home() {
                       return (
                         <div className="weight-toggle-wrap" style={{ marginTop: ".4rem" }}>
                           <button className="weight-toggle-btn" onClick={() => toggleWeight("modal-" + detailBook.id)}>
-                            📊 추천 가중치 {isOpen ? "▲" : "▼"}
+                            추천 가중치 {isOpen ? "▲" : "▼"}
                           </button>
                           {isOpen && (
                             <div className="weight-detail">
-                              <div className={w1 > 1.0 ? "weight-row active" : "weight-row dim"}>🏆 국제 수상: ×{w1.toFixed(1)} ({aw}개)</div>
-                              <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>📚 추천 기관: ×{w2.toFixed(1)} ({recoN}개 기관)</div>
-                              <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>🏛 도서관 보유: ×{w3.toFixed(1)} {lr ? `(전국 보유 상위 ${lr.pct}% · ${lr.count}관)` : "(데이터 없음)"}</div>
+                              <div className={w1 > 1.0 ? "weight-row active" : "weight-row dim"}>국제 수상: ×{w1.toFixed(1)} ({aw}개)</div>
+                              <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>추천 기관: ×{w2.toFixed(1)} ({recoN}개 기관)</div>
+                              <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>공공도서관 보유: ×{w3.toFixed(1)} {lr ? `(전국 공공도서관 보유 상위 ${lr.pct}% · ${lr.count}관)` : "(데이터 없음)"}</div>
                               <div className="weight-total">합산 ×{total}</div>
                             </div>
                           )}
@@ -1298,7 +1202,7 @@ export default function Home() {
             </div>
 
             <div className="detail-summary-section">
-              <div className="detail-section-title">📖 줄거리</div>
+              <div className="detail-section-title">줄거리</div>
               {summaryLoading ? (
                 <div className="lib-loading">
                   <Loader2 size={18} className="spin" />
@@ -1322,24 +1226,26 @@ export default function Home() {
 
             {/* 다중지능 독후활동 */}
             <ReadingActivity
+              key={detailBook.id}
               title={detailBook.koreanTitle}
               author={detailBook.author}
               summary={summary}
               tags={detailBook.tags}
               hook={detailBook.hook}
               targetAge={detailBook.targetAge}
+              autoOpen={detailAutoActivity}
             />
 
             {detailBook.activity && detailBook.activity.trim() && (
               <div className="detail-activity-section">
-                <div className="detail-section-title">✏️ 독서 후 활동</div>
+                <div className="detail-section-title">독서 후 활동</div>
                 <p className="detail-activity">{detailBook.activity}</p>
               </div>
             )}
 
             {detailBook.companions && detailBook.companions.length > 0 && (
               <div className="detail-activity-section">
-                <div className="detail-section-title">📚 함께 보면 좋은 짝꿍 책</div>
+                <div className="detail-section-title">함께 보면 좋은 짝꿍 책</div>
                 {detailBook.companions.map((c, i) => (
                   <p key={i} className="detail-activity" style={{ margin: ".15rem 0" }}>
                     · {c.title}{c.original ? ` (${c.original})` : ""}
@@ -1370,6 +1276,7 @@ export default function Home() {
                 <button onClick={handleGetLocationInModal}>위치 허용 후 재검색</button>
               </div>
             )}
+            {locationError && <span className="location-error-msg">{locationError}</span>}
             {userLocation && (
               <div className="location-active">
                 <MapPin size={13} />
@@ -1421,7 +1328,7 @@ export default function Home() {
             {userLocation && (
               <>
                 <div className="small-lib-section-header">
-                  📚 근처 작은도서관
+                  근처 작은도서관
                   <span className="small-lib-note">작은도서관 정보누리 기준</span>
                 </div>
                 <div className="small-lib-disclaimer">
