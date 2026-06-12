@@ -146,20 +146,28 @@ export async function GET(req: NextRequest) {
     }
 
     // ── 2. knu 현재 구 + 인접 구 작은도서관 목록 병렬 조회 ──────────
+    type KnuLib = { MANAGE_CODE: string; LIB_NAME: string; LIB_ADDRESS: string; LIB_URL: string };
     const fetchLibList = async (cityCode: string) => {
+      const all: KnuLib[] = [];
       try {
-        const res = await fetch(`${KNU_BASE}/main/get/liblist`, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            pageno: "1", display: "100",
-            code: areaCode, city_code: cityCode,
-            keyword: "", bookium_yn: "all",
-          }).toString(),
-        });
-        const data = await res.json();
-        return data?.LIB_LIST?.LIST_DATA ?? [];
-      } catch { return []; }
+        // 경기 534곳 등 시도 전체 조회 대응 — 100곳씩 최대 8페이지
+        for (let pageno = 1; pageno <= 8; pageno++) {
+          const res = await fetch(`${KNU_BASE}/main/get/liblist`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              pageno: String(pageno), display: "100",
+              code: areaCode, city_code: cityCode,
+              keyword: "", bookium_yn: "all",
+            }).toString(),
+          });
+          const data = await res.json();
+          const list = (data?.LIB_LIST?.LIST_DATA ?? []) as KnuLib[];
+          all.push(...list);
+          if (list.length < 100) break;
+        }
+      } catch { /* 부분 결과 사용 */ }
+      return all;
     };
 
     // 구 코드가 있으면 해당 구들 병렬 조회, 없으면 전체 조회
@@ -194,9 +202,13 @@ export async function GET(req: NextRequest) {
       return undefined;
     };
 
-    // ── 4. 각 도서관 소장 여부 병렬 확인 (최대 40개) ─────────────────
+    // ── 4. 거리순 상위 40곳만 소장 여부 병렬 확인 ─────────────────
+    // 전국 좌표(small_lib_coords.json) 기반 — 좌표 없는 도서관은 뒤로
+    const libsByDistance = [...libs].sort(
+      (a, b) => (getDistance(a.MANAGE_CODE) ?? 9999) - (getDistance(b.MANAGE_CODE) ?? 9999)
+    );
     const checkResults = await Promise.all(
-      libs.slice(0, 40).map(async (lib) => {
+      libsByDistance.slice(0, 40).map(async (lib) => {
         try {
           const searchRes = await fetch(`${KNU_BASE}/getSearchResult/detail`, {
             method: "POST",
