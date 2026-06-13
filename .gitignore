@@ -42,3 +42,12 @@ next-env.d.ts
 *.backup_*
 *.bak
 *.bak_*
+
+# local data & scripts (not deployed)
+*.numbers
+preview-*.html
+src/data/knu_small_libs.json
+src/data/books_youth.json
+src/data/pbl_sets.json
+전국도서관표준데이터.csv
+scripts/*.mjs
