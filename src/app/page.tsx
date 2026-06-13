@@ -17,7 +17,7 @@ interface Book {
   id: string; source: string; sourceLabel: string;
   awardYear: string; awardName: string; awardCategory: string; awardSubCategory?: string;
   originalTitle: string; koreanTitle: string;
-  author: string; publisher: string; publishedYear: string;
+  author: string; authorSearch?: string; publisher: string; publishedYear: string;
   isbn: string; koreanIsbn: string; targetAge: string;
   tags: string[]; situationTags: string[]; emotionTags: string[]; topicTags: string[];
   hook: string; notice: string; activity: string; country: string;
@@ -268,11 +268,13 @@ export default function Home() {
     // G: 관련도 임계값 필터 (calcRelevance < 1 → 제외) + 작가/제목 직접 일치 허용
     if (query.trim()) {
       const q = query.toLowerCase();
+      const qNorm = q.replace(/[^0-9a-z가-힣]/g, "");
       // 1차: 제목·작가·정확한 태그 직접 일치 → 제목/작가 검색은 주제 확장 없이 이 결과만 노출
       const directHit = (b: Book) =>
         b.koreanTitle.toLowerCase().includes(q) ||
         b.originalTitle.toLowerCase().includes(q) ||
         b.author.toLowerCase().includes(q) ||
+        (qNorm.length >= 2 && (b.authorSearch || "").includes(qNorm)) ||
         b.tags.some((t) => t.toLowerCase() === q);
       const directs = filtered.filter(directHit);
       if (directs.length > 0) {
