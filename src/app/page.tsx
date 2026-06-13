@@ -809,8 +809,8 @@ export default function Home() {
           {/* 전체 해제 — 필터 활성 시만 노출 */}
           {(hasAnyFilter || sortModes.length > 0) && (
             <div className="reset-all-row">
-              <button className="reset-all-prominent-btn" onClick={clearAllFilters} title="컬렉션·연령·태그·정렬·검색어 모두 해제">
-                ✕ 전체 해제
+              <button className="reset-all-prominent-btn" onClick={clearAllFilters} title="검색어·컬렉션·연령·주제어·정렬을 모두 해제합니다">
+                ✕ 검색·필터 전체 초기화
               </button>
             </div>
           )}
@@ -1167,35 +1167,35 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
-                    {/* 가중치 토글 (모달용) */}
-                    {(() => {
-                      const w1 = awardWeight(detailBook), w2 = recommendationWeight(detailBook), w3 = libraryWeight(detailBook);
-                      if (w1 === 1.0 && w2 === 1.0 && w3 === 1.0) return null;
-                      const aw = countIntlAwards(detailBook);
-                      const recoN = recommendationCount(detailBook);
-                      const lr = getLibRank(detailBook);
-                      const total = Math.round(w1 * w2 * w3 * 100) / 100;
-                      const isOpen = weightOpenIds.has("modal-" + detailBook.id);
-                      return (
-                        <div className="weight-toggle-wrap" style={{ marginTop: ".4rem" }}>
-                          <button className="weight-toggle-btn" onClick={() => toggleWeight("modal-" + detailBook.id)}>
-                            추천 가중치 {isOpen ? "▲" : "▼"}
-                          </button>
-                          {isOpen && (
-                            <div className="weight-detail">
-                              <div className={w1 > 1.0 ? "weight-row active" : "weight-row dim"}>국제 수상: ×{w1.toFixed(1)} ({aw}개)</div>
-                              <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>추천 기관: ×{w2.toFixed(1)} ({recoN}개 기관)</div>
-                              <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>공공도서관 보유: ×{w3.toFixed(1)} {lr ? `전국 ${lr.count}개관 보유 (상위 ${lr.pct}%)` : "(데이터 없음)"}</div>
-                              <div className="weight-total">합산 ×{total}</div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
                   </div>
                 ) : detailBook.awardName ? (
                   <div className="detail-award">{detailBook.sourceLabel} {detailBook.awardYear && `(${detailBook.awardYear})`}</div>
                 ) : null}
+                {/* 가중치 토글 — 모든 책 대상, 가중치 없으면 자동 숨김 */}
+                {(() => {
+                  const w1 = awardWeight(detailBook), w2 = recommendationWeight(detailBook), w3 = libraryWeight(detailBook);
+                  if (w1 === 1.0 && w2 === 1.0 && w3 === 1.0) return null;
+                  const aw = countIntlAwards(detailBook);
+                  const recoN = recommendationCount(detailBook);
+                  const lr = getLibRank(detailBook);
+                  const total = Math.round(w1 * w2 * w3 * 100) / 100;
+                  const isOpen = weightOpenIds.has("modal-" + detailBook.id);
+                  return (
+                    <div className="weight-toggle-wrap" style={{ marginTop: ".4rem" }}>
+                      <button className="weight-toggle-btn" onClick={() => toggleWeight("modal-" + detailBook.id)}>
+                        추천 가중치 {isOpen ? "▲" : "▼"}
+                      </button>
+                      {isOpen && (
+                        <div className="weight-detail">
+                          <div className={w1 > 1.0 ? "weight-row active" : "weight-row dim"}>국제 수상: ×{w1.toFixed(1)} ({aw}개)</div>
+                          <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>추천 기관: ×{w2.toFixed(1)} ({recoN}개 기관)</div>
+                          <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>공공도서관 보유: ×{w3.toFixed(1)} {lr ? `전국 ${lr.count}개관 보유 (상위 ${lr.pct}%)` : "(데이터 없음)"}</div>
+                          <div className="weight-total">합산 ×{total}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {detailBook.ageGroup && (
                   <div className="detail-age">
                     대상 연령: {ageLabel(detailBook.ageGroup)}
