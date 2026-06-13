@@ -118,13 +118,11 @@ function synonymScore(book: BookEntry, keywords: string[], base: string): number
 function tokenScore(book: BookEntry, tokens: string[], base: string): number {
   let score = 0;
   const titleL = book.title.toLowerCase();
-  const hookL  = (book.hook || "").toLowerCase();
   const tagsL  = book.tags.map(t => t.toLowerCase());
   for (const tk of tokens) {
     if (tk === base) continue;
     if (tagsL.some(t => t === tk || t.includes(tk))) score += 5;
     else if (titleL.includes(tk)) score += 4;
-    else if (hookL.includes(tk)) score += 2;
   }
   return score;
 }

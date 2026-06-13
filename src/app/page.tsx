@@ -212,6 +212,7 @@ export default function Home() {
   const [showActivityOnly, setShowActivityOnly] = useState(false); // 내부 로직용 유지
   const [showAbout,        setShowAbout]        = useState(false);
   const [activeTags,       setActiveTags]       = useState<string[]>([]);
+  const [expandedGroups,   setExpandedGroups]   = useState<string[]>([]);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
   const [libLoading,     setLibLoading]     = useState(false);
   const [smallLibraries,    setSmallLibraries]    = useState<SmallLibInfo[]>([]);
@@ -475,7 +476,7 @@ export default function Home() {
   };
   const clearAllFilters = () => {
     setQuery(""); setSelectedSources([]); setSelectedAges([]);
-    setActiveTags([]); setSortModes([]); setAiMode(false);
+    setActiveTags([]); setSortModes([]); setAiMode(false); setExpandedGroups([]);
   };
 
   // ── 도서관 조회 — 브라우저에서 data4library.kr 직접 호출 (CORS: *) ──
@@ -805,6 +806,15 @@ export default function Home() {
             </>
           )}
 
+          {/* 전체 해제 — 필터 활성 시만 노출 */}
+          {(hasAnyFilter || sortModes.length > 0) && (
+            <div className="reset-all-row">
+              <button className="reset-all-prominent-btn" onClick={clearAllFilters} title="컬렉션·연령·태그·정렬·검색어 모두 해제">
+                ✕ 전체 해제
+              </button>
+            </div>
+          )}
+
           {/* 컬렉션으로 둘러보기 */}
           <div className="browse-section">
             <div className="browse-header">
@@ -813,12 +823,16 @@ export default function Home() {
             </div>
             <div className="browse-cards">
               {COLLECTION_GROUPS.map((g) => {
-                const isOn = g.sources.some((src) => selectedSources.includes(src));
+                const hasSelected = g.sources.some((src) => selectedSources.includes(src));
+                const isExpanded  = expandedGroups.includes(g.key);
+                const isOn = isExpanded || hasSelected;
                 return (
                   <button
                     key={g.key}
                     className={`browse-card ${isOn ? "on" : ""}`}
-                    onClick={() => toggleGroup(g.sources)}
+                    onClick={() => setExpandedGroups(prev =>
+                      prev.includes(g.key) ? prev.filter(k => k !== g.key) : [...prev, g.key]
+                    )}
                     data-tooltip={g.tip}
                   >
                     <span className={`browse-icon ${g.iconCls}`}>{g.hanja}</span>
@@ -828,9 +842,15 @@ export default function Home() {
                 );
               })}
             </div>
-            {COLLECTION_GROUPS.filter((g) => g.sources.some((src) => selectedSources.includes(src))).map((g) => (
+            {COLLECTION_GROUPS.filter((g) =>
+              expandedGroups.includes(g.key) || g.sources.some((src) => selectedSources.includes(src))
+            ).map((g) => (
               <div key={g.key} className="browse-detail-chips">
                 <span className="browse-detail-label">{g.title} 세부</span>
+                <button
+                  className={`chip ${g.sources.every(s => selectedSources.includes(s)) ? "active" : ""}`}
+                  onClick={() => toggleGroup(g.sources)}
+                >전체</button>
                 {g.sources.map((src) => {
                   const cfg = SOURCE_CONFIG[src];
                   if (!cfg) return null;
@@ -904,11 +924,6 @@ export default function Home() {
             )}
           </div>
           <div className="grid-header-right">
-            {(hasAnyFilter || sortModes.length > 0) && (
-              <button className="reset-all-prominent-btn" onClick={clearAllFilters} title="컬렉션·연령·태그·정렬·검색어 모두 해제">
-                ✕ 전체 해제
-              </button>
-            )}
             <div className="sort-pills">
               <button
                 className={`sort-pill ${sortModes.length === 0 ? "on" : ""}`}
@@ -1010,7 +1025,7 @@ export default function Home() {
               const parts: string[] = [];
               if (aw > 0) parts.push(`국제 수상 ${aw}회`);
               if (recoN > 0) parts.push(`추천기관 ${recoN}곳`);
-              if (lr) parts.push(`보유 상위 ${lr.pct}%`);
+              if (lr) parts.push(`전국 ${lr.count}개관 보유`);
               if (parts.length === 0) return null;
               return (
                 <div className="cred-line" title="카드를 누르면 추천 근거와 상세 정보를 볼 수 있어요">
@@ -1170,7 +1185,7 @@ export default function Home() {
                             <div className="weight-detail">
                               <div className={w1 > 1.0 ? "weight-row active" : "weight-row dim"}>국제 수상: ×{w1.toFixed(1)} ({aw}개)</div>
                               <div className={w2 > 1.0 ? "weight-row active" : "weight-row dim"}>추천 기관: ×{w2.toFixed(1)} ({recoN}개 기관)</div>
-                              <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>공공도서관 보유: ×{w3.toFixed(1)} {lr ? `(전국 공공도서관 보유 상위 ${lr.pct}% · ${lr.count}관)` : "(데이터 없음)"}</div>
+                              <div className={w3 > 1.0 ? "weight-row active" : "weight-row dim"}>공공도서관 보유: ×{w3.toFixed(1)} {lr ? `전국 ${lr.count}개관 보유 (상위 ${lr.pct}%)` : "(데이터 없음)"}</div>
                               <div className="weight-total">합산 ×{total}</div>
                             </div>
                           )}

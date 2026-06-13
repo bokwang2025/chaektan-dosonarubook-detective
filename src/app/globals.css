@@ -186,6 +186,10 @@ body {
 .reset-all-prominent-btn:hover {
   border-color: var(--accent); color: var(--accent);
 }
+.reset-all-row {
+  display: flex; justify-content: flex-end;
+  padding: .25rem 0 .1rem;
+}
 
 .ai-btn {
   display: flex; align-items: center; gap: .45rem;
