@@ -7,6 +7,23 @@
 
 import libraryRank from "../data/library_rank.json";
 
+// ── 토큰화 ───────────────────────────────────────────────
+const JOSA = ["에게서","으로","에게","에서","한테","까지","부터","처럼","보다","라는","라고","이의","의","을","를","이","가","은","는","과","와","도","만","에","로","께"];
+const STOPWORDS = new Set(["책","그림책","도서","추천","좋은","맞는","맞춤","위한","위해","관련","이야기","아이","어린이","주제","내용","좋아하는","좋아하","싶은","같은","어울리는","찾아줘","알려줘","골라줘","해줘"]);
+
+export function tokenize(query: string): string[] {
+  const base = (query || "").toLowerCase().normalize("NFC");
+  const out = new Set<string>();
+  for (let w of base.split(/[\s,./·]+/).filter(Boolean)) {
+    for (const j of JOSA) {
+      if (w.length > j.length + 1 && w.endsWith(j)) { w = w.slice(0, -j.length); break; }
+    }
+    if (w.length < 2 || STOPWORDS.has(w)) continue;
+    out.add(w);
+  }
+  return [...out];
+}
+
 // ── 유의어 / 연관어 사전 ─────────────────────────────────
 const SYNONYM_MAP: Record<string, string[]> = {
   // 감정
@@ -94,6 +111,20 @@ function synonymScore(book: BookEntry, keywords: string[], base: string): number
     for (const tag of tagsL) {
       if (tag.includes(kw) || kw === tag) score += 3;
     }
+  }
+  return score;
+}
+
+function tokenScore(book: BookEntry, tokens: string[], base: string): number {
+  let score = 0;
+  const titleL = book.title.toLowerCase();
+  const hookL  = (book.hook || "").toLowerCase();
+  const tagsL  = book.tags.map(t => t.toLowerCase());
+  for (const tk of tokens) {
+    if (tk === base) continue;
+    if (tagsL.some(t => t === tk || t.includes(tk))) score += 5;
+    else if (titleL.includes(tk)) score += 4;
+    else if (hookL.includes(tk)) score += 2;
   }
   return score;
 }
@@ -208,8 +239,9 @@ export function getKeywords(query: string): string[] {
  */
 function scoreBook(book: BookEntry, keywords: string[], base: string): { relevance: number; total: number } {
   const direct  = directScore(book, base);
+  const token   = tokenScore(book, tokenize(base), base);
   const synonym = synonymScore(book, keywords, base);
-  const relevance = direct + synonym * 0.4; // 유의어는 40% 보조
+  const relevance = direct + token + synonym * 0.4;
 
   if (relevance < 1) return { relevance: 0, total: 0 };
 
