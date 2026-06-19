@@ -22,12 +22,13 @@ export async function POST(req: NextRequest) {
         const ranked = rankByRelevance(query, books);
         const booksSlice = ranked.slice(0, 300);
 
-        // Claude 전달 시 가중치 정보도 포함 (추천 이유 품질 향상)
+        // Claude 전달 시 가중치 + 줄거리 포함 (추천 판단 품질 향상)
         const booksForClaude = booksSlice.map((b) => ({
           id: b.id,
           title: b.title,
           tags: b.tags,
           hook: b.hook,
+          summary: (b.summary || "").slice(0, 100),
           age: b.age,
           source: b.source,
           awardCount: b.awardCount,
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
         }));
 
         const prompt = `당신은 어린이 도서 추천 전문가입니다.
-아래는 도서 목록(JSON)입니다. 각 도서에는 tags(주제/감정/상황 태그), hook(추천 상황 설명), weight(가중치 점수)가 있습니다.
+아래는 도서 목록(JSON)입니다. 각 도서에는 tags(주제/감정/상황 태그), hook(추천 상황 설명), summary(줄거리 요약), weight(가중치 점수)가 있습니다.
 weight가 높을수록 다수 기관 추천·수상 이력이 풍부한 책입니다.
 
 도서 목록:
@@ -44,14 +45,15 @@ ${JSON.stringify(booksForClaude, null, 0)}
 
 사용자 검색어: "${query}"
 
-위 검색어와 가장 관련성 높은 책 최대 10권을 골라주세요.
-태그, 훅, 제목을 종합적으로 고려하고, 동일 관련도라면 weight가 높은 책을 우선하세요.
+위 검색어의 **의미·상황·감정**에 맞는 책을 골라주세요.
+제목·태그뿐 아니라 줄거리(summary) 기준으로 판단하고, 동일 관련도라면 weight가 높은 책을 우선하세요.
+관련 있는 책을 최대 15권 골라주세요.
 응답은 반드시 아래 JSON 형식만 반환하세요 (설명 없이):
 {"results": [{"id": "책id", "reason": "이 책을 추천하는 이유 1-2문장 (한국어)"}]}`;
 
         const message = await client.messages.create({
           model: "claude-haiku-4-5",
-          max_tokens: 1024,
+          max_tokens: 1500,
           messages: [{ role: "user", content: prompt }],
         });
 

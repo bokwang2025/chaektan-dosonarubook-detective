@@ -27,15 +27,24 @@ export function tokenize(query: string): string[] {
 // ── 유의어 / 연관어 사전 ─────────────────────────────────
 const SYNONYM_MAP: Record<string, string[]> = {
   // 감정
-  용기:   ["용기", "자신감", "희망", "도전", "두려움", "무서움", "극복"],
-  슬픔:   ["슬픔", "슬프", "위로", "외로움", "속상함", "눈물", "그리움"],
+  용기:   ["용기", "용감", "씩씩", "자신감", "희망", "도전", "두려움", "무서움", "극복", "겁"],
+  슬픔:   ["슬픔", "슬프", "위로", "외로움", "속상함", "눈물", "그리움", "상실"],
   기쁨:   ["기쁨", "행복", "즐거움", "신남", "설렘", "웃음"],
-  화남:   ["화남", "분노", "짜증", "답답함", "억울함"],
+  화남:   ["화남", "화", "분노", "짜증", "답답함", "억울함", "감정"],
   불안:   ["불안", "걱정", "두려움", "무서움", "긴장"],
   사랑:   ["사랑", "따뜻함", "포근함", "애정", "그리움", "보고싶음"],
   감사:   ["감사", "고마움", "소중함", "배려"],
   외로움: ["외로움", "혼자", "친구", "외롭", "고독"],
-  자존감: ["자존감", "자신감", "나다움", "자아", "자존심", "특별함"],
+  자존감: ["자존감", "자신감", "나답게", "개성", "나다움", "자아", "자존심", "특별함"],
+  // 관계·사회
+  협동:   ["협동", "협력", "함께", "같이", "힘을 합", "도움", "팀워크", "우정", "단합"],
+  다툼:   ["다툼", "싸움", "갈등", "다투", "화해", "토라", "미움"],
+  우정:   ["우정", "친구", "단짝", "사이좋", "동무"],
+  배려:   ["배려", "친절", "양보", "이해", "공감", "돕"],
+  나눔:   ["나눔", "나누", "베풂", "기부", "선물", "공유", "함께", "이웃"],
+  도전:   ["도전", "꿈", "목표", "노력", "포기하지"],
+  이별:   ["이별", "죽음", "헤어짐", "떠남", "상실"],
+  환경:   ["환경", "자연", "지구", "생태", "쓰레기", "재활용"],
 
   // 주제
   가족:      ["가족", "부모", "엄마", "아빠", "형제", "자매", "조부모", "할머니", "할아버지", "동생", "언니", "오빠", "형", "누나"],
@@ -62,7 +71,6 @@ const SYNONYM_MAP: Record<string, string[]> = {
   잠:        ["잠", "잠안옴", "밤", "꿈", "잠자리"],
   아픔:      ["아픔", "병", "병원", "건강"],
   이사:      ["이사", "전학", "낯선", "새로운"],
-  나눔:      ["나눔", "배려", "공유", "함께", "이웃"],
   반려동물:  ["반려동물", "강아지", "고양이", "동물", "펫"],
 
   // 동물 12종 ─────────────────────────────────────────────
@@ -139,6 +147,7 @@ export interface BookEntry {
   title: string;
   tags: string[];
   hook: string;
+  summary?: string;
   age?: string;
   source?: string;
   isbn?: string;
@@ -297,6 +306,36 @@ export function rankByRelevance(query: string, books: BookEntry[]): BookEntry[] 
 
   return withScore
     .sort((a, b) => b.total - a.total)
+    .map(x => x.book);
+}
+
+/**
+ * AI 후보 선별용 — 줄거리(summary)까지 포함해 recall을 넓힘
+ * 화면 무료검색(calcRelevance)과 별도로 AI 전달용으로만 사용
+ */
+export function rankForAi(query: string, books: BookEntry[]): BookEntry[] {
+  const tokens = tokenize(query);
+  const base   = query.trim().toLowerCase();
+  const keywords = getKeywords(query);
+
+  const scored = books.map((b) => {
+    // 기존 스코어 (태그·제목·hook·유의어)
+    let score = directScore(b, base) + synonymScore(b, keywords, base) * 0.4;
+
+    // 토큰 × 줄거리 추가 매칭 (AI 후보용)
+    const summaryL = (b.summary || "").toLowerCase();
+    for (const tk of tokens) {
+      if (tk === base) continue;
+      if ((b.tags || []).some(t => t.toLowerCase().includes(tk))) score += 5;
+      else if (b.title.toLowerCase().includes(tk)) score += 4;
+      else if (summaryL.includes(tk)) score += 2;
+    }
+    return { book: b, score };
+  });
+
+  return scored
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
     .map(x => x.book);
 }
 

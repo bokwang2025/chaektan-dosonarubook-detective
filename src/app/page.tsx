@@ -5,7 +5,7 @@ import {
   Search, MapPin, Library, BookOpen, Award, Medal, BadgeCheck, Pencil,
   Sparkles, X, ChevronDown, Loader2, Info,
 } from "lucide-react";
-import { getRelatedKeywords, calcRelevance, rankByRelevance, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank, INTL_AWARD_NAMES } from "../lib/smartSearch";
+import { getRelatedKeywords, calcRelevance, rankByRelevance, rankForAi, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank, INTL_AWARD_NAMES } from "../lib/smartSearch";
 import libraryCounts from "../data/library_counts.json";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
@@ -380,26 +380,40 @@ export default function Home() {
         .filter((b) => effectiveSources.length === 0 || effectiveSources.includes(b.source));
       const localEntries = localPool.map((b) => ({
         id: b.id, title: b.koreanTitle || b.originalTitle,
-        tags: b.tags, hook: b.hook || "", awards: b.awards, sources: b.sources,
+        tags: b.tags, hook: b.hook || "", summary: b.summary || "",
+        awards: b.awards, sources: b.sources,
+        source: b.source, awardCount: b.awardCount,
         koreanIsbn: b.koreanIsbn, isbn: b.isbn,
       }));
-      // 관련도 있는 책 상위 60권 즉시 표시
+      // 관련도 있는 책 상위 60권 즉시 표시 (화면용 — 태그·제목 정밀)
       const preRanked = rankByRelevance(q, localEntries).slice(0, 60);
       const preBooks  = preRanked.map(r => allBooks.find(b => b.id === r.id)).filter(Boolean) as Book[];
       if (preBooks.length > 0) setBooks(preBooks);
 
-      // AI에게 보내는 풀: smartSearch 상위 50권만 (I: 300→50)
-      const payload = preRanked.slice(0, 50).map((b) => ({
-        id: b.id,
-        title: b.title,
-        tags: b.tags, hook: b.hook,
-        age: (allBooks.find(ab => ab.id === b.id))?.targetAge || "",
-        source: b.source,
-        awardCount: b.awardCount ?? 1,
-        sources:    b.sources ?? [b.source ?? ""],
-        isbn:       b.isbn || "",
-        koreanIsbn: b.koreanIsbn || "",
-      }));
+      // AI 후보 풀: 줄거리까지 본 넓은 리콜로 최소 80권 확보
+      const aiRanked = rankForAi(q, localEntries);
+      // 부족하면 가중치 상위 책으로 패딩 (AI가 굶지 않도록)
+      const aiIds = new Set(aiRanked.map(b => b.id));
+      const padding = localEntries
+        .filter(b => !aiIds.has(b.id))
+        .sort((a, b) => calcWeight(b) - calcWeight(a));
+      const aiPool = [...aiRanked, ...padding].slice(0, 120);
+
+      const payload = aiPool.map((b) => {
+        const full = allBooks.find(ab => ab.id === b.id);
+        return {
+          id: b.id,
+          title: b.title,
+          tags: b.tags, hook: b.hook,
+          summary: (b.summary || "").slice(0, 100),
+          age: full?.targetAge || "",
+          source: b.source,
+          awardCount: b.awardCount ?? 1,
+          sources:    b.sources ?? [b.source ?? ""],
+          isbn:       b.isbn || "",
+          koreanIsbn: b.koreanIsbn || "",
+        };
+      });
 
       const res = await fetch("/api/ai-search", {
         method: "POST",
