@@ -391,16 +391,18 @@ export function rankForAi(query: string, books: BookEntry[]): BookEntry[] {
 export function getRelatedKeywords(query: string, topBookTags: string[] = []): string[] {
   const base = query.trim().toLowerCase();
   if (!base) return [];
-
+  const tokens = new Set(tokenize(query));
   const suggestions = new Set<string>();
-
   for (const [key, synonyms] of Object.entries(SYNONYM_MAP)) {
-    if (base.includes(key) || synonyms.some(s => base.includes(s))) {
+    const hit =
+      base === key ||
+      tokens.has(key) ||
+      synonyms.some(s => tokens.has(s) || (s.includes(" ") && base.includes(s)));
+    if (hit) {
       synonyms.forEach(s => { if (!base.includes(s)) suggestions.add(s); });
     }
   }
   topBookTags.forEach(t => { if (!base.includes(t)) suggestions.add(t); });
-
   return [...suggestions].slice(0, 10);
 }
 
