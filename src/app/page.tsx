@@ -222,7 +222,7 @@ export default function Home() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showActivityOnly, setShowActivityOnly] = useState(false); // 내부 로직용 유지
   const [showAbout,        setShowAbout]        = useState(false);
-  const [activeTags,       setActiveTags]       = useState<string[]>([]);
+  const [orTags,           setOrTags]           = useState<string[]>([]);
   const [expandedGroups,   setExpandedGroups]   = useState<string[]>([]);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
   const [libLoading,     setLibLoading]     = useState(false);
@@ -242,10 +242,10 @@ export default function Home() {
     const tagCount: Record<string, number> = {};
     books.forEach((b) => b.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
     const topTags = Object.entries(tagCount)
-      .filter(([t]) => !activeTags.includes(t) && t.toLowerCase() !== query.trim().toLowerCase())
+      .filter(([t]) => !orTags.includes(t) && t.toLowerCase() !== query.trim().toLowerCase())
       .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t]) => t);
-    return getRelatedKeywords(query, topTags).filter((t) => !activeTags.includes(t)).slice(0, 8);
-  }, [query, books, activeTags, aiMode]);
+    return getRelatedKeywords(query, topTags).filter((t) => !orTags.includes(t)).slice(0, 8);
+  }, [query, books, orTags, aiMode]);
 
   // ── 가용 연령 목록 ──────────────────────────
   const availableAges = AGE_ORDER.filter((a) =>
@@ -256,7 +256,7 @@ export default function Home() {
   const filterBooks = useCallback(() => {
     if (aiMode) return;
 
-    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || activeTags.length > 0 || sortModes.length > 0;
+    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || orTags.length > 0 || sortModes.length > 0;
 
     // 아무 필터·검색어도 없으면 가중치 정렬 전체 목록 (더보기로 확장)
     if (!hasFilter) {
@@ -277,30 +277,29 @@ export default function Home() {
       filtered = [...withAct, ...withoutAct];
     }
 
-    // G: 관련도 임계값 필터 (calcRelevance < 1 → 제외) + 작가/제목 직접 일치 허용
+    // G: 관련도 임계값 필터 — 제목/작가 신호와 주제어 신호를 분리
     if (query.trim()) {
       const q = query.toLowerCase();
       const qNorm = q.replace(/[^0-9a-z가-힣]/g, "");
-      // 1차: 제목·작가·정확한 태그 직접 일치 → 제목/작가 검색은 주제 확장 없이 이 결과만 노출
-      const directHit = (b: Book) =>
+      const entryOf = (b: Book) => ({
+        id: b.id, title: b.koreanTitle || b.originalTitle,
+        tags: b.tags, hook: b.hook || "", awards: b.awards, sources: b.sources,
+      });
+      const titleAuthorHit = (b: Book) =>
         b.koreanTitle.toLowerCase().includes(q) ||
         b.originalTitle.toLowerCase().includes(q) ||
         b.author.toLowerCase().includes(q) ||
-        (qNorm.length >= 2 && (b.authorSearch || "").includes(qNorm)) ||
-        b.tags.some((t) => t.toLowerCase() === q);
-      const directs = filtered.filter(directHit);
-      if (directs.length > 0) {
-        filtered = directs;
+        (qNorm.length >= 2 && (b.authorSearch || "").includes(qNorm));
+      const exactTagHit = (b: Book) => b.tags.some((t) => t.toLowerCase() === q);
+      const taHits = filtered.filter(titleAuthorHit);
+      if (taHits.length > 0) {
+        // 제목/작가 검색 → 정밀: 제목·작가·정확한 태그만 (주제 확장 안 함)
+        filtered = filtered.filter((b) => titleAuthorHit(b) || exactTagHit(b));
       } else {
-        // 직접 일치가 없을 때만 의미·주제(유의어) 기반 확장 폴백
-        filtered = filtered.filter((b) => {
-          const bookEntry = {
-            id: b.id, title: b.koreanTitle || b.originalTitle,
-            tags: b.tags, hook: b.hook || "",
-            awards: b.awards, sources: b.sources,
-          };
-          return calcRelevance(query, bookEntry) >= 1;
-        });
+        // 주제어 검색 → 정확한 태그 ∪ 유의어/관련도 확장
+        filtered = filtered.filter(
+          (b) => exactTagHit(b) || calcRelevance(query, entryOf(b)) >= 1
+        );
       }
     }
     if (selectedAges.length > 0)
@@ -311,12 +310,22 @@ export default function Home() {
         (selectedSources.includes("카네기") && b.source === "그린어웨이")
       );
 
-    if (activeTags.length > 0)
-      filtered = filtered.filter((b) =>
-        activeTags.every((t) =>
-          b.tags.includes(t) || (b.hook || "").includes(t) || b.koreanTitle.includes(t)
-        )
+    // orTags: 관련 주제어 칩 OR 확장
+    if (orTags.length > 0) {
+      const base = new Set(filtered.map((b) => b.id));
+      const extra = booksWithIsbn.filter((b) =>
+        !base.has(b.id) &&
+        orTags.some((t) => {
+          const tl = t.toLowerCase();
+          return b.tags.some((x) => x.toLowerCase() === tl) ||
+            calcRelevance(t, {
+              id: b.id, title: b.koreanTitle || b.originalTitle,
+              tags: b.tags, hook: b.hook || "", awards: b.awards, sources: b.sources,
+            }) >= 1;
+        })
       );
+      filtered = [...filtered, ...extra];
+    }
 
     // H: 검색어 있을 때 항상 관련도×가중치 정렬 → sortModes는 2차 기준
     const counts = libraryCounts as Record<string, number>;
@@ -361,7 +370,7 @@ export default function Home() {
 
     setResultCount(filtered.length);
     setBooks(showAll ? filtered : filtered.slice(0, 60));
-  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, activeTags, sortModes]); // showAll 포함 — 기본 화면 더보기 지원
+  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, orTags, sortModes]); // showAll 포함 — 기본 화면 더보기 지원
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -451,12 +460,12 @@ export default function Home() {
     }
   };
 
-  const addActiveTag = (tag: string) => {
-    setActiveTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
+  const addOrTag = (tag: string) => {
+    setOrTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
     setAiMode(false);
   };
-  const removeActiveTag = (tag: string) => {
-    setActiveTags((prev) => prev.filter((t) => t !== tag));
+  const removeOrTag = (tag: string) => {
+    setOrTags((prev) => prev.filter((t) => t !== tag));
   };
 
   const resetAi = () => { setAiMode(false); setAiEngine(""); setAiError(""); filterBooks(); };
@@ -464,7 +473,7 @@ export default function Home() {
   const switchTab = (mode: "keyword" | "ai") => {
     setSearchMode(mode);
     setQuery("");
-    setActiveTags([]);
+    setOrTags([]);
     setSortModes([]);
     setAiMode(false);
     setAiEngine("");
@@ -501,7 +510,7 @@ export default function Home() {
   };
   const clearAllFilters = () => {
     setQuery(""); setSelectedSources([]); setSelectedAges([]);
-    setActiveTags([]); setSortModes([]); setAiMode(false); setExpandedGroups([]);
+    setOrTags([]); setSortModes([]); setAiMode(false); setExpandedGroups([]);
   };
 
   // ── 도서관 조회 — 브라우저에서 data4library.kr 직접 호출 (CORS: *) ──
@@ -704,7 +713,7 @@ export default function Home() {
 
   const hasAnyFilter =
     Boolean(query.trim()) || selectedAges.length > 0 ||
-    selectedSources.length > 0 || activeTags.length > 0;
+    selectedSources.length > 0 || orTags.length > 0;
 
   // ── 렌더 ───────────────────────────────────
   return (
@@ -764,7 +773,7 @@ export default function Home() {
               }}
             />
             {query && (
-              <button className="clear-btn" onClick={() => { setQuery(""); setActiveTags([]); resetAi(); }}>
+              <button className="clear-btn" onClick={() => { setQuery(""); setOrTags([]); resetAi(); }}>
                 <X size={12} />
               </button>
             )}
@@ -804,25 +813,24 @@ export default function Home() {
           {/* 활성 태그 + 연관 태그 */}
           {!aiMode && (
             <>
-              {activeTags.length > 0 && (
+              {orTags.length > 0 && (
                 <div className="active-tags-row">
-                  <span className="active-tags-label">AND 검색:</span>
-                  {activeTags.map((t) => (
-                    <span key={t} className="active-tag-pill">
-                      #{t}
-                      <button onClick={() => removeActiveTag(t)}><X size={9} /></button>
+                  <span className="active-tags-label">넓힌 주제:</span>
+                  {orTags.map((t) => (
+                    <span key={t} className="active-tag-pill or-pill">
+                      {t}<button onClick={() => removeOrTag(t)}><X size={9} /></button>
                     </span>
                   ))}
-                  {activeTags.length > 1 && (
-                    <button className="active-tag-clear" onClick={() => setActiveTags([])}>전체 해제</button>
+                  {orTags.length > 1 && (
+                    <button className="active-tag-clear" onClick={() => setOrTags([])}>전체 해제</button>
                   )}
                 </div>
               )}
               {relatedTags.length > 0 && (
                 <div className="related-tags-row">
-                  <span className="related-tags-label">관련 주제어</span>
+                  <span className="related-tags-label">관련 주제어 (눌러서 넓히기)</span>
                   {relatedTags.map((t) => (
-                    <button key={t} className="related-tag-btn" onClick={() => addActiveTag(t)}>
+                    <button key={t} className="related-tag-btn" onClick={() => addOrTag(t)}>
                       +{t}
                     </button>
                   ))}
