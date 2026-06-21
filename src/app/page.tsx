@@ -223,6 +223,7 @@ export default function Home() {
   const [showActivityOnly, setShowActivityOnly] = useState(false); // 내부 로직용 유지
   const [showAbout,        setShowAbout]        = useState(false);
   const [orTags,           setOrTags]           = useState<string[]>([]);
+  const [andTags,          setAndTags]          = useState<string[]>([]);
   const [expandedGroups,   setExpandedGroups]   = useState<string[]>([]);
   const [libraries,      setLibraries]      = useState<LibraryInfo[]>([]);
   const [libLoading,     setLibLoading]     = useState(false);
@@ -247,6 +248,24 @@ export default function Home() {
     return getRelatedKeywords(query, topTags).filter((t) => !orTags.includes(t)).slice(0, 8);
   }, [query, books, orTags, aiMode]);
 
+  const narrowTags = useMemo((): [string, number][] => {
+    if (aiMode || books.length <= 20) return [];
+    const exclude = new Set<string>(
+      [query.trim(), ...orTags, ...andTags].map((s) => s.toLowerCase()).filter(Boolean)
+    );
+    const cnt = new Map<string, number>();
+    for (const b of books) {
+      for (const t of new Set(b.tags)) {
+        if (exclude.has(t.toLowerCase())) continue;
+        cnt.set(t, (cnt.get(t) || 0) + 1);
+      }
+    }
+    return [...cnt.entries()]
+      .filter(([, n]) => n >= 2 && n < books.length)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+  }, [books, query, orTags, andTags, aiMode]);
+
   // ── 가용 연령 목록 ──────────────────────────
   const availableAges = AGE_ORDER.filter((a) =>
     booksWithIsbn.some((b) => b.ageGroup === a)
@@ -256,7 +275,7 @@ export default function Home() {
   const filterBooks = useCallback(() => {
     if (aiMode) return;
 
-    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || orTags.length > 0 || sortModes.length > 0;
+    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || orTags.length > 0 || andTags.length > 0 || sortModes.length > 0;
 
     // 아무 필터·검색어도 없으면 가중치 정렬 전체 목록 (더보기로 확장)
     if (!hasFilter) {
@@ -327,6 +346,18 @@ export default function Home() {
       filtered = [...filtered, ...extra];
     }
 
+    // andTags: 좁히기(AND 패싯)
+    if (andTags.length > 0) {
+      filtered = filtered.filter((b) =>
+        andTags.every((t) => {
+          const tl = t.toLowerCase();
+          return b.tags.some((x) => x.toLowerCase() === tl) ||
+                 (b.hook || "").toLowerCase().includes(tl) ||
+                 b.koreanTitle.toLowerCase().includes(tl);
+        })
+      );
+    }
+
     // H: 검색어 있을 때 항상 관련도×가중치 정렬 → sortModes는 2차 기준
     const counts = libraryCounts as Record<string, number>;
 
@@ -370,7 +401,7 @@ export default function Home() {
 
     setResultCount(filtered.length);
     setBooks(showAll ? filtered : filtered.slice(0, 60));
-  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, orTags, sortModes]); // showAll 포함 — 기본 화면 더보기 지원
+  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, orTags, andTags, sortModes]); // showAll 포함 — 기본 화면 더보기 지원
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -467,6 +498,13 @@ export default function Home() {
   const removeOrTag = (tag: string) => {
     setOrTags((prev) => prev.filter((t) => t !== tag));
   };
+  const addAndTag = (tag: string) => {
+    setAndTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
+    setAiMode(false);
+  };
+  const removeAndTag = (tag: string) => {
+    setAndTags((prev) => prev.filter((t) => t !== tag));
+  };
 
   const resetAi = () => { setAiMode(false); setAiEngine(""); setAiError(""); filterBooks(); };
 
@@ -474,6 +512,7 @@ export default function Home() {
     setSearchMode(mode);
     setQuery("");
     setOrTags([]);
+    setAndTags([]);
     setSortModes([]);
     setAiMode(false);
     setAiEngine("");
@@ -510,7 +549,7 @@ export default function Home() {
   };
   const clearAllFilters = () => {
     setQuery(""); setSelectedSources([]); setSelectedAges([]);
-    setOrTags([]); setSortModes([]); setAiMode(false); setExpandedGroups([]);
+    setOrTags([]); setAndTags([]); setSortModes([]); setAiMode(false); setExpandedGroups([]);
   };
 
   // ── 도서관 조회 — 브라우저에서 data4library.kr 직접 호출 (CORS: *) ──
@@ -713,7 +752,7 @@ export default function Home() {
 
   const hasAnyFilter =
     Boolean(query.trim()) || selectedAges.length > 0 ||
-    selectedSources.length > 0 || orTags.length > 0;
+    selectedSources.length > 0 || orTags.length > 0 || andTags.length > 0;
 
   // ── 렌더 ───────────────────────────────────
   return (
@@ -773,7 +812,7 @@ export default function Home() {
               }}
             />
             {query && (
-              <button className="clear-btn" onClick={() => { setQuery(""); setOrTags([]); resetAi(); }}>
+              <button className="clear-btn" onClick={() => { setQuery(""); setOrTags([]); setAndTags([]); resetAi(); }}>
                 <X size={12} />
               </button>
             )}
@@ -826,12 +865,35 @@ export default function Home() {
                   )}
                 </div>
               )}
+              {andTags.length > 0 && (
+                <div className="active-tags-row">
+                  <span className="active-tags-label">좁힌 주제:</span>
+                  {andTags.map((t) => (
+                    <span key={t} className="active-tag-pill and-pill">
+                      {t}<button onClick={() => removeAndTag(t)}><X size={9} /></button>
+                    </span>
+                  ))}
+                  {andTags.length > 1 && (
+                    <button className="active-tag-clear" onClick={() => setAndTags([])}>전체 해제</button>
+                  )}
+                </div>
+              )}
               {relatedTags.length > 0 && (
                 <div className="related-tags-row">
                   <span className="related-tags-label">관련 주제어 (눌러서 넓히기)</span>
                   {relatedTags.map((t) => (
                     <button key={t} className="related-tag-btn" onClick={() => addOrTag(t)}>
                       +{t}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {narrowTags.length > 0 && (
+                <div className="related-tags-row narrow-row">
+                  <span className="related-tags-label">결과 좁히기 (눌러서 좁히기)</span>
+                  {narrowTags.map(([t, n]) => (
+                    <button key={t} className="related-tag-btn narrow-btn" onClick={() => addAndTag(t)}>
+                      {t} {n}
                     </button>
                   ))}
                 </div>

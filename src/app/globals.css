@@ -1120,6 +1120,9 @@ body {
   cursor: pointer; transition: background .15s;
 }
 .related-tag-btn:hover { background: rgba(var(--accent-rgb,15,110,86),.15); }
+.active-tag-pill.and-pill { background: #3B6D11; }
+.related-tags-row.narrow-row .related-tag-btn { border-style: dashed; color: #3B6D11; background: #EAF3DE; border-color: #8cb86a; }
+.related-tags-row.narrow-row .related-tag-btn:hover { background: #d4ebb8; }
 
 /* ── 모달 다중수상 블록 (수정1) ─────────────── */
 .detail-awards-block { margin: .5rem 0 .7rem; }
