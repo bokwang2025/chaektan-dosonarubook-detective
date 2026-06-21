@@ -70,7 +70,13 @@ const FORMAT_RULES = [
 
 function getBookFormats(book: Book) {
   const text = [book.notice, book.hook, book.activity].filter(Boolean).join(" ");
-  return FORMAT_RULES.filter(rule => rule.patterns.some(p => text.includes(p)));
+  const byText = FORMAT_RULES.filter(rule => rule.patterns.some(p => text.includes(p)));
+  const hasWordlessTag = (book.tags || []).some(t => t === "글없는그림책");
+  if (hasWordlessTag && !byText.some(f => f.key === "wordless")) {
+    const w = FORMAT_RULES.find(f => f.key === "wordless");
+    if (w) byText.unshift(w);
+  }
+  return byText;
 }
 
 // ─── 상수 ────────────────────────────────────
@@ -222,6 +228,7 @@ export default function Home() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [showActivityOnly, setShowActivityOnly] = useState(false); // 내부 로직용 유지
   const [showAbout,        setShowAbout]        = useState(false);
+  const [coverZoom,        setCoverZoom]        = useState<string | null>(null);
   const [orTags,           setOrTags]           = useState<string[]>([]);
   const [andTags,          setAndTags]          = useState<string[]>([]);
   const [expandedGroups,   setExpandedGroups]   = useState<string[]>([]);
@@ -1188,7 +1195,7 @@ export default function Home() {
               <X size={18} />
             </button>
             <div className="detail-header">
-              <div className="detail-cover">
+              <div className="detail-cover" onClick={() => setCoverZoom(detailBook.koreanIsbn || detailBook.isbn)} style={{ cursor: "zoom-in" }} title="표지를 크게 보기">
                 <BookCover
                   isbn={detailBook.koreanIsbn || detailBook.isbn}
                   title={detailBook.koreanTitle}
@@ -1258,9 +1265,12 @@ export default function Home() {
                       {fmt.emoji} {fmt.label}
                     </span>
                   ))}
-                  {detailBook.tags.slice(0, 8).map((t, i) => (
-                    <span key={i} className="tag-chip">#{t}</span>
-                  ))}
+                  {(() => {
+                    const fmtLabels = new Set(getBookFormats(detailBook).map(f => f.label));
+                    return detailBook.tags.filter(t => !fmtLabels.has(t)).slice(0, 8).map((t, i) => (
+                      <span key={i} className="tag-chip">#{t}</span>
+                    ));
+                  })()}
                 </div>
                 <button className="library-btn" style={{ marginTop: ".8rem" }} onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
                   <Library size={13} />
@@ -1449,6 +1459,14 @@ export default function Home() {
           background: "var(--accent, #2f9e8f)", color: "#fff", fontSize: 20, lineHeight: "44px",
           boxShadow: "0 2px 10px rgba(0,0,0,.22)", cursor: "pointer" }}
       >↑</button>
+
+      {coverZoom && (
+        <div className="cover-zoom-overlay" onClick={() => setCoverZoom(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`/api/book-cover?isbn=${coverZoom}`} alt="표지 확대" className="cover-zoom-img" />
+          <button className="cover-zoom-close" onClick={() => setCoverZoom(null)} aria-label="닫기">✕</button>
+        </div>
+      )}
     </main>
   );
 }

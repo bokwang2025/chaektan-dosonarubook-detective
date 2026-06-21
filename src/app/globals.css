@@ -394,7 +394,7 @@ body {
 }
 
 /* ── 작가 줄 연령 인라인 ── */
-.book-meta .book-age-inline { color: var(--text-muted, #94a3b8); }
+.book-meta .book-age-inline { flex: 0 0 auto; white-space: nowrap; color: var(--text-muted, #94a3b8); }
 
 /* 배지 행 (이중 배지 지원) */
 .badge-row {
@@ -459,7 +459,7 @@ body {
 .book-original { font-size: .79rem; color: var(--text-sub); font-style: italic; }
 
 .book-meta {
-  display: flex; align-items: center; gap: .5rem;
+  display: flex; align-items: center; gap: 4px; min-width: 0;
   font-size: .82rem; color: var(--text-sub);
 }
 .meta-age {
@@ -1294,7 +1294,7 @@ body {
 }
 .book-author {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  max-width: 100%; display: block;
+  min-width: 0; flex: 1 1 auto;
 }
 .card-btns .activity-btn { flex: 0.85; }
 .card-btns .cta-btn { flex: 1.15; }
@@ -1347,3 +1347,10 @@ body {
 .mi-detail-desc { font-size: .72rem; color: var(--text-sub); }
 .mi-detail-activity { font-size: .86rem; color: var(--text); line-height: 1.7; margin: 0; }
 .mi-hint { font-size: .74rem; color: var(--text-sub); text-align: center; margin: .2rem 0; }
+
+/* ── 표지 라이트박스 ──────────────────────────── */
+.cover-zoom-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.8);
+  display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+.cover-zoom-img { max-width: 90vw; max-height: 90vh; box-shadow: 0 8px 40px rgba(0,0,0,.5); border-radius: 6px; }
+.cover-zoom-close { position: absolute; top: 20px; right: 24px; font-size: 24px; color: #fff;
+  background: transparent; border: none; cursor: pointer; }
