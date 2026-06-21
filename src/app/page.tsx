@@ -155,6 +155,17 @@ function pickDisplayBadge(book: Book): { label: string; cls: string; gold: boole
   return { label: SOURCE_CONFIG[domSrc]?.label ?? domSrc, cls: "badge-neutral", gold: false, intl: false };
 }
 
+// 카드 왼쪽 색 띠 — 국제수상 > 사서추천 > 교과연계 순
+const LIBRARIAN_SRC = new Set(["국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서"]);
+const CURRIC_SRC    = new Set(["교과연계도서","학교도서관저널"]);
+function bookBandColor(book: Book): string {
+  if ((book.awards ?? []).some(a => INTL_AWARD_NAMES.has(a.name))) return "#EF9F27";
+  const srcs = book.sources ?? [book.source];
+  if (srcs.some(s => LIBRARIAN_SRC.has(s ?? ""))) return "#1D9E75";
+  if (srcs.some(s => CURRIC_SRC.has(s ?? "")))    return "#378ADD";
+  return "var(--card-border, #e2e8f0)";
+}
+
 // 둘러보기 카드 (검색 영역 재디자인)
 const COLLECTION_GROUPS = [
   { key: "국제수상", hanja: "賞", title: "국제수상", desc: "세계가 인정한 그림책",
@@ -977,120 +988,58 @@ export default function Home() {
 
       {/* 도서 그리드 */}
       <section className="book-grid">
-        {books.map((book) => (
-          <div className="book-card" key={book.id} onClick={() => openDetail(book)}>
-            <div>
-              <BookCover
-                isbn={book.koreanIsbn || book.isbn}
-                title={book.koreanTitle}
-                source={book.source}
-                originalIsbn={book.isbn !== book.koreanIsbn ? book.isbn : undefined}
-                cachedUrl={
-                  CONFIRMED_COVERS[book.koreanIsbn]?.url ||
-                  CONFIRMED_COVERS[book.isbn]?.url
-                }
-              />
-            </div>
-
-            {(() => {
-              const badge = pickDisplayBadge(book);
-              const total = countIntlAwards(book) + recommendationCount(book);
-              const extra = Math.max(0, total - 1);
-              return (
-                <div className="badge-row">
-                  <div className={`source-badge ${badge.cls}`}>
-                    {badge.intl
-                      ? (badge.gold ? <Award size={11} /> : <Medal size={11} />)
-                      : <BookOpen size={11} />}
-                    {badge.label}
-                  </div>
-                  {extra > 0 && (
-                    <div className="source-badge source-badge-sm badge-neutral"
-                      title={`이 외 수상·추천 ${extra}건 — 카드를 눌러 확인하세요`}>
-                      +{extra}
-                    </div>
-                  )}
-                  {book.ageGroup && AGE_SHORT[book.ageGroup] && (
-                    <div className="source-badge badge-age" title={AGE_TOOLTIP[book.ageGroup]}>
-                      {AGE_SHORT[book.ageGroup]}
-                    </div>
-                  )}
+        {books.map((book) => {
+          const badge = pickDisplayBadge(book);
+          const band  = bookBandColor(book);
+          return (
+            <div className="book-card" key={book.id} onClick={() => openDetail(book)}>
+              <span className="card-band" style={{ background: band }} aria-hidden />
+              <div className="card-cover-wrap">
+                <BookCover
+                  isbn={book.koreanIsbn || book.isbn}
+                  title={book.koreanTitle}
+                  source={book.source}
+                  originalIsbn={book.isbn !== book.koreanIsbn ? book.isbn : undefined}
+                  cachedUrl={CONFIRMED_COVERS[book.koreanIsbn]?.url || CONFIRMED_COVERS[book.isbn]?.url}
+                />
+                <div className={`cover-seal ${badge.cls}`}>
+                  {badge.intl ? (badge.gold ? <Award size={11}/> : <Medal size={11}/>) : <BookOpen size={11}/>}
+                  {badge.label}
                 </div>
-              );
-            })()}
+              </div>
 
-            <h3 className="book-title">{book.koreanTitle}</h3>
-            {book.originalTitle && book.originalTitle !== book.koreanTitle && (
-              <div className="book-original">{book.originalTitle}</div>
-            )}
+              <h3 className="book-title">{book.koreanTitle}</h3>
 
-            <div className="book-meta">
-              <span className="book-author" title={book.author}>{book.author}</span>
+              <div className="book-meta">
+                <span className="book-author" title={book.author}>{book.author}</span>
+                {book.ageGroup && AGE_SHORT[book.ageGroup] && (
+                  <span className="book-age-inline" title={AGE_TOOLTIP[book.ageGroup]}> · {AGE_SHORT[book.ageGroup]}</span>
+                )}
+              </div>
+
+              {book.hook ? (
+                <div className="hook-text clamp2">{book.hook}</div>
+              ) : (() => {
+                const allTags = [...(book.situationTags||[]),...(book.emotionTags||[]),...(book.topicTags||[]),...(book.tags||[])];
+                const uniq = [...new Set(allTags)].slice(0, 3);
+                return uniq.length >= 2
+                  ? <div className="hook-text hook-text-auto clamp2">{uniq.join(", ")} 등을 담은 책이에요.</div>
+                  : <div className="hook-text hook-text-hint">카드를 눌러 줄거리를 확인하세요</div>;
+              })()}
+
+              <div className="card-btns">
+                <button className="library-btn activity-btn" title="이 책으로 할 수 있는 다중지능 독후활동을 봐요"
+                  onClick={(e) => { e.stopPropagation(); openDetail(book, true); }}>
+                  <Pencil size={13}/> 독후활동
+                </button>
+                <button className="library-btn lib-ghost" title="내 주변 도서관의 대출 가능 여부를 확인해요"
+                  onClick={(e) => { e.stopPropagation(); handleCheckLibrary(book); }}>
+                  <Library size={14}/> 도서관
+                </button>
+              </div>
             </div>
-
-            {book.hook && (
-              <div className="hook-text">{book.hook}</div>
-            )}
-
-            {(() => {
-              const aw = countIntlAwards(book);
-              const recoN = recommendationCount(book);
-              const lr = getLibRank(book);
-              const parts: string[] = [];
-              if (aw > 0) parts.push(`국제 수상 ${aw}회`);
-              if (recoN > 0) parts.push(`추천기관 ${recoN}곳`);
-              if (lr) parts.push(`전국 ${lr.count}개관 보유`);
-              if (parts.length === 0) return null;
-              return (
-                <div className="cred-line" title="카드를 누르면 추천 근거와 상세 정보를 볼 수 있어요">
-                  <BadgeCheck size={12} />
-                  <span>{parts.join(" · ")}</span>
-                </div>
-              );
-            })()}
-            {!book.hook && (() => {
-              // hook 없을 때 fallback: 태그 조합 → 없으면 줄거리 유도
-              const allTags = [
-                ...(book.situationTags || []),
-                ...(book.emotionTags   || []),
-                ...(book.topicTags     || []),
-                ...(book.tags          || []),
-              ];
-              const unique = [...new Set(allTags)].slice(0, 4);
-              if (unique.length >= 2) {
-                return (
-                  <div className="hook-text hook-text-auto">
-                    {unique.join(", ")} 등을 담은 책이에요.
-                  </div>
-                );
-              }
-              return (
-                <div className="hook-text hook-text-hint" onClick={() => openDetail(book)}>
-                  카드를 눌러 줄거리를 확인하세요
-                </div>
-              );
-            })()}
-
-            <div className="card-btns">
-              <button
-                className="library-btn activity-btn"
-                title="이 책으로 할 수 있는 다중지능 독후활동을 봐요"
-                onClick={(e) => { e.stopPropagation(); openDetail(book, true); }}
-              >
-                <Pencil size={13} />
-                독후활동
-              </button>
-              <button
-                className="library-btn cta-btn"
-                title="내 주변 도서관의 대출 가능 여부를 확인해요"
-                onClick={(e) => { e.stopPropagation(); handleCheckLibrary(book); }}
-              >
-                <Library size={14} />
-                도서관 확인
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {books.length === 0 && (
           <div className="empty-state">

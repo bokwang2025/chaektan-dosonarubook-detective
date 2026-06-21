@@ -371,6 +371,31 @@ body {
   border-color: rgba(15,110,86,0.18);
 }
 
+/* ── 왼쪽 색 띠 ── */
+.book-card { position: relative; overflow: hidden; }
+.card-band {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+}
+
+/* ── 표지 + 씰 배지 오버레이 ── */
+.card-cover-wrap { position: relative; }
+.cover-seal {
+  position: absolute; top: 8px; left: 8px;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; line-height: 1; padding: 3px 7px;
+  border-radius: var(--radius-md, .4rem);
+  pointer-events: none;
+}
+
+/* ── hook 2줄 말줄임 ── */
+.hook-text.clamp2, .hook-text.hook-text-auto.clamp2 {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-height: 2.6em;
+}
+
+/* ── 작가 줄 연령 인라인 ── */
+.book-meta .book-age-inline { color: var(--text-muted, #94a3b8); }
+
 /* 배지 행 (이중 배지 지원) */
 .badge-row {
   display: flex; flex-wrap: wrap; gap: .35rem; align-items: center;
@@ -760,6 +785,14 @@ body {
   font-size: .76rem; white-space: nowrap; overflow: hidden;
   padding-left: .3rem; padding-right: .3rem;
 }
+.card-btns .activity-btn {
+  flex: 1; background: #1D9E75 !important; border-color: #1D9E75 !important; color: #fff !important;
+}
+.card-btns .lib-ghost {
+  flex: 0 0 auto; background: transparent !important; color: #0F6E56 !important;
+  border: 1px solid var(--card-border, #e2e8f0) !important;
+}
+.card-btns .lib-ghost:hover { background: #E1F5EE !important; }
 
 /* ── 상세 모달 ──────────────────────────── */
 .detail-modal {
