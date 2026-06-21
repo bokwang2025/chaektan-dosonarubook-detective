@@ -238,15 +238,27 @@ export default function Home() {
   const [sortModes,      setSortModes]      = useState<Array<"recent"|"multi"|"library">>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const isPreciseQuery = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return false;
+    const qNorm = q.replace(/[^0-9a-z가-힣]/g, "");
+    return booksWithIsbn.some((b) =>
+      b.koreanTitle.toLowerCase().includes(q) ||
+      b.originalTitle.toLowerCase().includes(q) ||
+      b.author.toLowerCase().includes(q) ||
+      (qNorm.length >= 2 && (b.authorSearch || "").includes(qNorm))
+    );
+  }, [query, booksWithIsbn]);
+
   const relatedTags = useMemo(() => {
-    if (!query.trim() || aiMode) return [];
+    if (!query.trim() || aiMode || isPreciseQuery) return [];
     const tagCount: Record<string, number> = {};
     books.forEach((b) => b.tags.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; }));
     const topTags = Object.entries(tagCount)
       .filter(([t]) => !orTags.includes(t) && t.toLowerCase() !== query.trim().toLowerCase())
       .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t]) => t);
     return getRelatedKeywords(query, topTags).filter((t) => !orTags.includes(t)).slice(0, 8);
-  }, [query, books, orTags, aiMode]);
+  }, [query, books, orTags, aiMode, isPreciseQuery]);
 
   const narrowTags = useMemo((): [string, number][] => {
     const hasContext =
@@ -254,7 +266,8 @@ export default function Home() {
       orTags.length > 0 ||
       selectedSources.length > 0 ||
       selectedAges.length > 0;
-    if (aiMode || !hasContext || books.length <= 20) return [];
+    const minResults = isPreciseQuery ? 1 : 20;
+    if (aiMode || !hasContext || books.length <= minResults) return [];
     const exclude = new Set<string>(
       [query.trim(), ...orTags, ...andTags].map((s) => s.toLowerCase()).filter(Boolean)
     );
@@ -269,7 +282,7 @@ export default function Home() {
       .filter(([, n]) => n >= 2 && n < books.length)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8);
-  }, [books, query, orTags, andTags, selectedSources, selectedAges, aiMode]);
+  }, [books, query, orTags, andTags, selectedSources, selectedAges, aiMode, isPreciseQuery]);
 
   // ── 가용 연령 목록 ──────────────────────────
   const availableAges = AGE_ORDER.filter((a) =>
