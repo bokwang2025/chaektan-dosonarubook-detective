@@ -249,7 +249,12 @@ export default function Home() {
   }, [query, books, orTags, aiMode]);
 
   const narrowTags = useMemo((): [string, number][] => {
-    if (aiMode || books.length <= 20) return [];
+    const hasContext =
+      query.trim().length > 0 ||
+      orTags.length > 0 ||
+      selectedSources.length > 0 ||
+      selectedAges.length > 0;
+    if (aiMode || !hasContext || books.length <= 20) return [];
     const exclude = new Set<string>(
       [query.trim(), ...orTags, ...andTags].map((s) => s.toLowerCase()).filter(Boolean)
     );
@@ -264,7 +269,7 @@ export default function Home() {
       .filter(([, n]) => n >= 2 && n < books.length)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8);
-  }, [books, query, orTags, andTags, aiMode]);
+  }, [books, query, orTags, andTags, selectedSources, selectedAges, aiMode]);
 
   // ── 가용 연령 목록 ──────────────────────────
   const availableAges = AGE_ORDER.filter((a) =>
