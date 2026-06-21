@@ -262,9 +262,13 @@ export function calcWeight(book: WeightLike): number {
 export function getKeywords(query: string): string[] {
   const base = query.trim().toLowerCase();
   const expanded = new Set<string>([base]);
-
+  const tokens = new Set(tokenize(query));
   for (const [key, synonyms] of Object.entries(SYNONYM_MAP)) {
-    if (base.includes(key) || synonyms.some(s => base.includes(s))) {
+    const hit =
+      base === key ||
+      tokens.has(key) ||
+      synonyms.some(s => tokens.has(s) || (s.includes(" ") && base.includes(s)));
+    if (hit) {
       synonyms.forEach(s => expanded.add(s));
       expanded.add(key);
     }

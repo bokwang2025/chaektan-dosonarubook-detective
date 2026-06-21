@@ -1351,6 +1351,6 @@ body {
 /* ── 표지 라이트박스 ──────────────────────────── */
 .cover-zoom-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.8);
   display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
-.cover-zoom-img { max-width: 90vw; max-height: 90vh; box-shadow: 0 8px 40px rgba(0,0,0,.5); border-radius: 6px; }
+.cover-zoom-img { width: min(92vw, 540px); height: auto; max-height: 92vh; object-fit: contain; box-shadow: 0 8px 40px rgba(0,0,0,.5); border-radius: 6px; }
 .cover-zoom-close { position: absolute; top: 20px; right: 24px; font-size: 24px; color: #fff;
   background: transparent; border: none; cursor: pointer; }
