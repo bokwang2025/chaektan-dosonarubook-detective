@@ -69,12 +69,13 @@ const FORMAT_RULES = [
 ];
 
 function getBookFormats(book: Book) {
-  const text = [book.notice, book.hook, book.activity].filter(Boolean).join(" ");
+  const text = [book.notice, book.hook].filter(Boolean).join(" "); // activity 제외
   const byText = FORMAT_RULES.filter(rule => rule.patterns.some(p => text.includes(p)));
-  const hasWordlessTag = (book.tags || []).some(t => t === "글없는그림책");
-  if (hasWordlessTag && !byText.some(f => f.key === "wordless")) {
-    const w = FORMAT_RULES.find(f => f.key === "wordless");
-    if (w) byText.unshift(w);
+  const labelSet = new Set(byText.map(f => f.label));
+  for (const rule of FORMAT_RULES) {
+    if (!labelSet.has(rule.label) && (book.tags || []).some(t => t === rule.label)) {
+      byText.push(rule); labelSet.add(rule.label);
+    }
   }
   return byText;
 }
