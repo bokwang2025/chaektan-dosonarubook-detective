@@ -140,7 +140,12 @@ function synonymScore(book: BookEntry, keywords: string[], base: string): number
   const tagsL  = book.tags.map(t => t.toLowerCase());
 
   for (const kw of keywords) {
-    if (kw === base) continue; // 직접 점수에서 이미 처리
+    if (kw === base) continue;
+    // 한 글자 한글 동의어: 태그 완전일치만 인정 (substring 오매칭 차단)
+    if (kw.length < 2 && /[가-힣]/.test(kw)) {
+      if (tagsL.some(t => t === kw)) score += 3;
+      continue;
+    }
     if (titleL.includes(kw)) score += 4;
     if (hookL.includes(kw))  score += 2;
     for (const tag of tagsL) {
