@@ -69,15 +69,8 @@ const FORMAT_RULES = [
 ];
 
 function getBookFormats(book: Book) {
-  const text = [book.notice, book.hook].filter(Boolean).join(" "); // activity 제외
-  const byText = FORMAT_RULES.filter(rule => rule.patterns.some(p => text.includes(p)));
-  const labelSet = new Set(byText.map(f => f.label));
-  for (const rule of FORMAT_RULES) {
-    if (!labelSet.has(rule.label) && (book.tags || []).some(t => t === rule.label)) {
-      byText.push(rule); labelSet.add(rule.label);
-    }
-  }
-  return byText;
+  const tagSet = new Set(book.tags || []);
+  return FORMAT_RULES.filter(rule => tagSet.has(rule.label));
 }
 
 // ─── 상수 ────────────────────────────────────
