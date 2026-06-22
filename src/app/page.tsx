@@ -192,6 +192,13 @@ const AGE_CARD: Record<string, { title: string; sub: string }> = {
   "초등고학년": { title: "초등 고학년", sub: "4~6학년" },
 };
 
+const FORMAT_BROWSE = [
+  { label: "글없는그림책", tip: "글 없이 그림만으로 이야기가 펼쳐지는 책" },
+  { label: "병풍책",       tip: "아코디언·병풍처럼 길게 펼쳐지는 판형의 책" },
+  { label: "콜라주그림책", tip: "오려 붙이기·혼합 재료(콜라주) 기법으로 그린 책" },
+  { label: "판화그림책",   tip: "목판·석판 등 판화 기법으로 찍어 만든 책" },
+];
+
 // ─── 배지 레이블 압축 ───────────────────────────────────────
 // ─── W1용: 국제 수상 개수 (smartSearch 중앙 함수 재사용) ─────
 
@@ -1008,6 +1015,21 @@ export default function Home() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* 형태로 둘러보기 */}
+          <div className="browse-section">
+            <div className="browse-header">
+              <span className="browse-title">형태로 둘러보기</span>
+            </div>
+            <div className="format-browse-row">
+              {FORMAT_BROWSE.map((f) => (
+                <button key={f.label} className="format-browse-chip" title={f.tip}
+                  onClick={() => { resetAi(); setOrTags([]); setAndTags([]); setQuery(f.label); }}>
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
