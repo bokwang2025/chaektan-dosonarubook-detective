@@ -421,8 +421,12 @@ export default function Home() {
         return 0;
       });
     } else {
-      // 정렬 미선택 시에도 항상 가중치 기준 정렬 (컬렉션/태그/연령만 골라도 동일 기준)
-      filtered = [...filtered].sort((a, b) => weightedScore(b) - weightedScore(a));
+      // 추천순 기본: 국내 출간(번역본) 우선 → 그다음 관련도×가중치
+      filtered = [...filtered].sort((a, b) => {
+        const ka = a.koreanIsbn ? 1 : 0, kb = b.koreanIsbn ? 1 : 0;
+        if (ka !== kb) return kb - ka;
+        return weightedScore(b) - weightedScore(a);
+      });
     }
 
     setResultCount(filtered.length);
@@ -1125,6 +1129,9 @@ export default function Home() {
                 <span className="book-author" title={book.author}>{book.author}</span>
                 {book.ageGroup && AGE_SHORT[book.ageGroup] && (
                   <span className="book-age-inline" title={AGE_TOOLTIP[book.ageGroup]}> · {AGE_SHORT[book.ageGroup]}</span>
+                )}
+                {!book.koreanIsbn && (
+                  <span className="badge-untranslated" title="국내에 번역 출간되지 않아 국내 도서관 대출이 어려울 수 있어요">국내 미출간</span>
                 )}
               </div>
 

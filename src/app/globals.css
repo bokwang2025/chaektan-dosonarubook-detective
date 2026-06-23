@@ -1364,3 +1364,9 @@ body {
   transition: background .15s;
 }
 .format-browse-chip:hover { background: #E1F5EE; }
+
+/* ── 국내 미출간 배지 ─────────────────────────── */
+.badge-untranslated {
+  display: inline-flex; align-items: center; font-size: 11px; padding: 2px 7px;
+  border-radius: var(--radius-md, .4rem); background: #F1EFE8; color: #5F5E5A; margin-left: 4px;
+}
