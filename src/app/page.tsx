@@ -243,7 +243,7 @@ export default function Home() {
   const [weightOpenIds,  setWeightOpenIds]  = useState<Set<string>>(new Set());
   const toggleWeight = (id: string) =>
     setWeightOpenIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
-  const [sortModes,      setSortModes]      = useState<Array<"recent"|"multi"|"library">>([]);
+  const [sortModes,      setSortModes]      = useState<Array<"recent"|"library">>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isPreciseQuery = useMemo(() => {
@@ -407,10 +407,6 @@ export default function Home() {
             const ya = a.publishedYear ? parseInt(a.publishedYear) : 0;
             const yb = b.publishedYear ? parseInt(b.publishedYear) : 0;
             diff = yb - ya;
-          } else if (mode === "multi") {
-            const ka = a.koreanIsbn ? 1 : 0;
-            const kb = b.koreanIsbn ? 1 : 0;
-            diff = kb - ka;
           } else if (mode === "library") {
             const ca = counts[a.koreanIsbn] ?? (a.koreanIsbn ? 0 : -1);
             const cb = counts[b.koreanIsbn] ?? (b.koreanIsbn ? 0 : -1);
@@ -1074,7 +1070,7 @@ export default function Home() {
                 [
                   { key: "library", label: "인기 대출",      title: "전국 공공도서관이 많이 소장한 책부터 — 도서관정보나루 보유 데이터 기준이에요" },
                   { key: "recent",  label: "최신 출간",      title: "출판 연도가 최신인 책부터 보여드려요" },
-                  { key: "multi",   label: "국내 출간 우선", title: "한국어판이 출간된 책을 앞에 보여드려요 — 원서만 있는 책은 뒤로 가요" },
+
                 ] as const
               ).map(({ key, label, title }) => {
                 const idx = sortModes.indexOf(key);
