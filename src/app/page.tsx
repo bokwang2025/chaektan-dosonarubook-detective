@@ -396,7 +396,10 @@ export default function Home() {
 
     if (sortModes.length > 0) {
       filtered = [...filtered].sort((a, b) => {
-        // 검색어 있으면 관련도×가중치 1순위
+        // 0순위: 국내 출간(대출 가능) 우선 — 미출간은 모든 정렬에서 항상 아래로
+        const ka = a.koreanIsbn ? 1 : 0, kb = b.koreanIsbn ? 1 : 0;
+        if (ka !== kb) return kb - ka;
+        // 검색어 있으면 관련도×가중치
         if (query.trim()) {
           const diff = weightedScore(b) - weightedScore(a);
           if (Math.abs(diff) > 0.5) return diff;
