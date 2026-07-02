@@ -5,7 +5,7 @@ import {
   Search, MapPin, Library, BookOpen, Award, Medal, BadgeCheck, Pencil,
   Sparkles, X, ChevronDown, Loader2, Info,
 } from "lucide-react";
-import { getRelatedKeywords, calcRelevance, rankByRelevance, rankForAi, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank, INTL_AWARD_NAMES } from "../lib/smartSearch";
+import { getRelatedKeywords, tokenize, calcRelevance, rankByRelevance, rankForAi, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank, INTL_AWARD_NAMES } from "../lib/smartSearch";
 import libraryCounts from "../data/library_counts.json";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
@@ -78,6 +78,25 @@ const allBooks = booksData as Book[];
 
 // ISBN 있는 책만 (서울어린이도서관 300권 제외)
 const booksWithIsbn = allBooks.filter((b) => (b.isbn || b.koreanIsbn) && b.isPictureBook === true && b.ageGroup !== "비대상" && !b._excluded);
+
+// ── 검색어 라우팅용: '구체어 신호' 강도 ────────────────────────
+// 검색어 토큰이 태그·제목에 직접 매칭되는 책 수. 5권 이상이면 조기 종료.
+// 이 수가 충분하면(구체어) 키워드 검색으로 충분 → AI 자동호출을 생략한다.
+const AI_ROUTE_THRESHOLD = 5;
+function strongKeywordHits(q: string): number {
+  const toks = tokenize(q);
+  if (toks.length === 0) return 0;
+  let n = 0;
+  for (const b of booksWithIsbn) {
+    const title = (b.koreanTitle || b.originalTitle || "").toLowerCase();
+    const tags = (b.tags || []).map((t) => t.toLowerCase());
+    if (toks.some((tk) => title.includes(tk) || tags.some((t) => t === tk || t.includes(tk)))) {
+      n++;
+      if (n >= AI_ROUTE_THRESHOLD) return n;
+    }
+  }
+  return n;
+}
 
 const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeClass: string; desc: string }> = {
   "칼데콧":          { label: "칼데콧",        chipClass: "active-gold",    badgeClass: "badge-caldecott", desc: "미국 최고 그림책 일러스트레이터상. 매년 ALA가 미국 아동 그림책 작가에게 수여. 세계적으로 인정받는 그림책이 많습니다." },
@@ -838,8 +857,15 @@ export default function Home() {
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && query.trim()) {
-                  const words = query.trim().split(/\s+/);
-                  if (words.length >= 3 || query.trim().length >= 12) {
+                  // 키워드 우선 라우팅:
+                  //  · 구체어(토큰 1~2개가 태그·제목에 강하게 매칭 = 주제/제목/작가 찾기) → 키워드
+                  //  · 서술형(토큰 3개+ 또는 상황·감정 표현) 이면서 구체어가 아닐 때만 → AI
+                  //  (AI가 좁혀도 ①의 병합 로직으로 키워드 결과는 유지되므로 빈 화면 위험 없음)
+                  const q = query.trim();
+                  const toks = tokenize(q);
+                  const concrete = toks.length <= 2 && strongKeywordHits(q) >= AI_ROUTE_THRESHOLD;
+                  const descriptive = toks.length >= 3 || /(에게|싶|마음|기분|그리워|외로|무서)/.test(q);
+                  if (descriptive && !concrete) {
                     handleAiSearch();
                   }
                 }
