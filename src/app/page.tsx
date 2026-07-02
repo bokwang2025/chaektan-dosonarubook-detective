@@ -504,14 +504,19 @@ export default function Home() {
       if (data.error) throw new Error(data.error);
       setAiEngine(data.engine || "smart");
 
-      const aiBooks: Book[] = data.results
-        .map((r: { id: string; reason: string }) => {
+      const aiBooks: Book[] = (data.results as { id: string; reason: string }[])
+        .map((r): Book | null => {
           const book = allBooks.find((b) => b.id === r.id);
           return book ? { ...book, aiReason: r.reason } : null;
         })
-        .filter(Boolean);
+        .filter((b): b is Book => b !== null);
 
-      setBooks(aiBooks);
+      // AI 결과가 키워드 후보를 덮어써 화면이 비는 문제 방지:
+      // AI가 고른 책(추천 사유 有)을 앞에 두고, 키워드로 찾은 관련 도서를 뒤에 이어 붙임.
+      // → "공룡" 같은 구체어 검색에서 AI가 적게/못 골라도 관련 책이 사라지지 않음.
+      const aiIdSet = new Set(aiBooks.map((b) => b.id));
+      const merged = [...aiBooks, ...preBooks.filter((b) => !aiIdSet.has(b.id))];
+      setBooks(merged.length > 0 ? merged : preBooks);
     } catch {
       setAiError("AI 검색에 실패했습니다. 일반 검색으로 대체합니다.");
       setAiMode(false); filterBooks();
