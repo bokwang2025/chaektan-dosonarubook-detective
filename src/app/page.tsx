@@ -234,7 +234,7 @@ export default function Home() {
   const [selectedSources, setSelectedSources]= useState<string[]>([]);
   const [searchMode,      setSearchMode]     = useState<"keyword"|"ai">("keyword");
   const [showKoreanOnly,  setShowKoreanOnly] = useState(false);
-  const [books,           setBooks]          = useState<Book[]>(INITIAL_BOOKS);
+  const [books,           setBooks]          = useState<Book[]>(() => INITIAL_BOOKS.slice(0, 60)); // 프리렌더 HTML 경량화: 초기 60권(하이드레이션 후 filterBooks가 동일하게 유지)
   const [resultCount,     setResultCount]    = useState<number>(INITIAL_BOOKS.length);
   const [aiMode,         setAiMode]         = useState(false);
   const [aiEngine,       setAiEngine]       = useState<"claude"|"smart"|"">("");

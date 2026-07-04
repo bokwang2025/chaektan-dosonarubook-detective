@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 25;
 
-const LIB_API_KEY =
-  process.env.LIB_API_KEY ||
-  "be9456f40126dbefd5c69c0a647affe45f49a41766a6b10c5919c531810fe1ef";
+const LIB_API_KEY = process.env.LIB_API_KEY || ""; // 키는 Vercel 환경변수로만 주입 (하드코딩 금지)
 const BASE = "https://data4library.kr/api";
 
 function buildBookSearchUrl(homepage: string, isbn: string): string {
