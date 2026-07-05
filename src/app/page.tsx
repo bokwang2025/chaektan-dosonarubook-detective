@@ -1103,7 +1103,8 @@ export default function Home() {
               {(
                 [
                   { key: "library", label: "인기 대출",      title: "전국 공공도서관이 많이 소장한 책부터 — 도서관정보나루 보유 데이터 기준이에요" },
-                  { key: "recent",  label: "최신 출간",      title: "출판 연도가 최신인 책부터 보여드려요" },
+                  // [2026-07-05 임시 숨김] 최신 출간: publishedYear가 초판이 아닌 복간/재쇄 연도로 들어간 데이터가 있어 정렬이 부정확 → 데이터 정비 후 복원. 아래 한 줄 주석 해제하면 즉시 복원됨.
+                  // { key: "recent",  label: "최신 출간",      title: "출판 연도가 최신인 책부터 보여드려요" },
 
                 ] as const
               ).map(({ key, label, title }) => {
