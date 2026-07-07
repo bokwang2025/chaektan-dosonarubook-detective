@@ -112,6 +112,7 @@ const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeCla
   "뉴베리":         { label: "뉴베리",          chipClass: "active-amber",   badgeClass: "badge-newbery",   desc: "미국 최고 권위의 아동문학상. 매년 ALA가 가장 탁월한 미국 아동도서에 수여합니다." },
   "그린어웨이":     { label: "그린어웨이",      chipClass: "active-lime",    badgeClass: "badge-greenaway", desc: "영국 최고의 아동 그림책 일러스트상. 케이트 그린어웨이상으로도 알려진 영국판 칼데콧입니다." },
   "세종도서":       { label: "세종도서",         chipClass: "active-teal",    badgeClass: "badge-sejong",    desc: "문화체육관광부 선정 세종도서. 매년 우수 교양·문학나눔 도서를 선정합니다." },
+  "행복한아침독서": { label: "행복한아침독서", chipClass: "active-rose", badgeClass: "badge-achim", desc: "㈔행복한아침독서 아침독서 추천도서. 교사·동네책방 운영자 등 선정위원이 학교·가정의 아침독서를 위해 고른 추천목록입니다. 유아~초등을 두루 포함합니다." },
 };
 
 // 수상 출처 (뱃지 금/은 구분 적용)
@@ -175,8 +176,8 @@ function pickDisplayBadge(book: Book): { label: string; cls: string; gold: boole
 }
 
 // 카드 왼쪽 색 띠 — 국제수상 > 사서추천 > 교과연계 순
-const LIBRARIAN_SRC = new Set(["국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서"]);
-const CURRIC_SRC    = new Set(["교과연계도서","학교도서관저널"]);
+const LIBRARIAN_SRC = new Set(["국립중앙도서관","국립어린이도서관","서울어린이도서관","세종도서"]);
+const CURRIC_SRC    = new Set(["교과연계도서","학교도서관저널","행복한아침독서","서울시교육청"]);
 function bookBandColor(book: Book): string {
   if ((book.awards ?? []).some(a => INTL_AWARD_NAMES.has(a.name))) return "#EF9F27";
   const srcs = book.sources ?? [book.source];
@@ -190,12 +191,12 @@ const COLLECTION_GROUPS = [
   { key: "국제수상", hanja: "賞", title: "국제수상", desc: "세계가 인정한 그림책",
     iconCls: "browse-icon-gold", tip: "칼데콧 · 안데르센 · 볼로냐 · 카네기",
     sources: ["칼데콧", "안데르센", "볼로냐", "카네기"] },
-  { key: "사서추천", hanja: "推", title: "사서추천", desc: "도서관이 권하는 책",
-    iconCls: "browse-icon-teal", tip: "국립중앙 · 국립어린이 · 서울어린이 · 서울시교육청 · 세종도서",
-    sources: ["국립중앙도서관", "국립어린이도서관", "서울어린이도서관", "서울시교육청", "세종도서"] },
-  { key: "교과연계", hanja: "校", title: "교과연계", desc: "수업과 이어지는 책",
-    iconCls: "browse-icon-blue", tip: "교과연계도서 · 학교도서관저널",
-    sources: ["교과연계도서", "학교도서관저널"] },
+  { key: "사서추천", hanja: "推", title: "사서추천", desc: "도서관·공공기관이 권하는 책",
+    iconCls: "browse-icon-teal", tip: "국립중앙 · 국립어린이 · 서울어린이 · 세종도서",
+    sources: ["국립중앙도서관", "국립어린이도서관", "서울어린이도서관", "세종도서"] },
+  { key: "독서교육", hanja: "讀", title: "독서교육", desc: "교사·독서기관이 권하는 책",
+    iconCls: "browse-icon-blue", tip: "교과연계도서 · 학교도서관저널 · 행복한아침독서 · 서울시교육청",
+    sources: ["교과연계도서", "학교도서관저널", "행복한아침독서", "서울시교육청"] },
 ];
 
 const AGE_CARD: Record<string, { title: string; sub: string }> = {
@@ -831,7 +832,7 @@ export default function Home() {
             <div className="about-sources">
               <strong>수상·추천 컬렉션별 특징</strong>
               <ul>
-                {(["칼데콧","안데르센","볼로냐","카네기","국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서","교과연계도서","학교도서관저널"] as const).map((src) => {
+                {(["칼데콧","안데르센","볼로냐","카네기","국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서","교과연계도서","학교도서관저널","행복한아침독서"] as const).map((src) => {
                   const cfg = SOURCE_CONFIG[src];
                   if (!cfg) return null;
                   return <li key={src}><span className="about-src-label">{cfg.label}</span> {cfg.desc}</li>;

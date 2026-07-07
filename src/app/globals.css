@@ -239,6 +239,7 @@ body {
 .chip.active-orange { background: #ea580c;         border-color: #ea580c;         color: #fff; }
 .chip.active-indigo { background: #0f6e56;         border-color: #0f6e56;         color: #fff; }
 .chip.active-brown  { background: #92400e;         border-color: #92400e;         color: #fff; }
+.chip.active-rose   { background: #be123c;         border-color: #be123c;         color: #fff; }
 
 .select-input {
   background: #fff; border: 1.5px solid var(--border2);
@@ -439,6 +440,7 @@ body {
 .badge-nlcf       { background: rgba(79,70,229,.07);  color: #0f6e56;     border: 1px solid rgba(79,70,229,.2);  }
 .badge-cur        { background: rgba(146,64,14,.07);  color: #92400e;     border: 1px solid rgba(146,64,14,.2);  }
 .badge-jnl        { background: rgba(51,65,85,.07);   color: #334155;     border: 1px solid rgba(51,65,85,.2);   }
+.badge-achim      { background: rgba(190,18,60,.07); color: #be123c;   border: 1px solid rgba(190,18,60,.2); }
 .badge-newbery    { background: rgba(180,83,9,.07);   color: #b45309;     border: 1px solid rgba(180,83,9,.22);  }
 .badge-greenaway  { background: rgba(77,124,15,.07);  color: #4d7c0f;     border: 1px solid rgba(77,124,15,.22); }
 .badge-sejong     { background: rgba(13,148,136,.07); color: #0f766e;     border: 1px solid rgba(13,148,136,.22); }
