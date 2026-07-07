@@ -816,7 +816,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="wordmark">책탐정 도서나루</h1>
         <p className="app-tagline">수상·추천으로 고른 그림책, 가까운 도서관까지</p>
-        <p className="stat-pill">검증된 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> · 국제 4대 상 + 국내 추천 7기관</p>
+        <p className="stat-pill">검증된 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> · 국제 4대 상 + 국내 추천 8기관</p>
 
         {/* 앱 소개 토글 */}
         <button className="about-toggle" onClick={() => setShowAbout(v => !v)}>
