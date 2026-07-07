@@ -195,8 +195,8 @@ const COLLECTION_GROUPS = [
     iconCls: "browse-icon-teal", tip: "국립중앙 · 국립어린이 · 서울어린이 · 세종도서",
     sources: ["국립중앙도서관", "국립어린이도서관", "서울어린이도서관", "세종도서"] },
   { key: "독서교육", hanja: "讀", title: "독서교육", desc: "교사·독서기관이 권하는 책",
-    iconCls: "browse-icon-blue", tip: "교과연계도서 · 학교도서관저널 · 행복한아침독서 · 서울시교육청",
-    sources: ["교과연계도서", "학교도서관저널", "행복한아침독서", "서울시교육청"] },
+    iconCls: "browse-icon-blue", tip: "교과연계도서 · 서울시교육청 · 학교도서관저널 · 행복한아침독서",
+    sources: ["교과연계도서", "서울시교육청", "학교도서관저널", "행복한아침독서"] },
 ];
 
 const AGE_CARD: Record<string, { title: string; sub: string }> = {
@@ -370,10 +370,11 @@ export default function Home() {
     if (selectedAges.length > 0)
       filtered = filtered.filter((b) => selectedAges.includes(b.ageGroup || ""));
     if (selectedSources.length > 0)
-      filtered = filtered.filter((b) =>
-        selectedSources.includes(b.source) ||
-        (selectedSources.includes("카네기") && b.source === "그린어웨이")
-      );
+      filtered = filtered.filter((b) => {
+        const srcs = b.sources ?? (b.source ? [b.source] : []);
+        return srcs.some((s) => selectedSources.includes(s)) ||
+          (selectedSources.includes("카네기") && srcs.includes("그린어웨이"));
+      });
 
     // orTags: 관련 주제어 칩 OR 확장
     if (orTags.length > 0) {
@@ -477,7 +478,7 @@ export default function Home() {
       const localPool = booksWithIsbn
         .filter((b) => !effectiveKoreanOnly || (b.koreanIsbn && b.koreanIsbn.length > 0))
         .filter((b) => effectiveAges.length === 0    || effectiveAges.includes(b.ageGroup || ""))
-        .filter((b) => effectiveSources.length === 0 || effectiveSources.includes(b.source));
+        .filter((b) => effectiveSources.length === 0 || (b.sources ?? (b.source ? [b.source] : [])).some((s) => effectiveSources.includes(s)));
       const localEntries = localPool.map((b) => ({
         id: b.id, title: b.koreanTitle || b.originalTitle,
         tags: b.tags, hook: b.hook || "", summary: b.summary || "",
