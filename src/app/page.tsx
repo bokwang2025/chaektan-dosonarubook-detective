@@ -113,6 +113,7 @@ const SOURCE_CONFIG: Record<string, { label: string; chipClass: string; badgeCla
   "그린어웨이":     { label: "그린어웨이",      chipClass: "active-lime",    badgeClass: "badge-greenaway", desc: "영국 최고의 아동 그림책 일러스트상. 케이트 그린어웨이상으로도 알려진 영국판 칼데콧입니다." },
   "세종도서":       { label: "세종도서",         chipClass: "active-teal",    badgeClass: "badge-sejong",    desc: "문화체육관광부 선정 세종도서. 매년 우수 교양·문학나눔 도서를 선정합니다." },
   "행복한아침독서": { label: "행복한아침독서", chipClass: "active-rose", badgeClass: "badge-achim", desc: "㈔행복한아침독서 아침독서 추천도서. 교사·동네책방 운영자 등 선정위원이 학교·가정의 아침독서를 위해 고른 추천목록입니다. 유아~초등을 두루 포함합니다." },
+  "어린이도서연구회": { label: "어린이도서연구회", chipClass: "active", badgeClass: "badge-default", desc: "어린이도서연구회가 선정한 추천 그림책. 1995년부터 좋은 어린이책을 가려 뽑아 온 시민단체의 그림책 목록으로, 옛 명작까지 폭넓게 포함합니다." },
 };
 
 // 수상 출처 (뱃지 금/은 구분 적용)
@@ -177,7 +178,7 @@ function pickDisplayBadge(book: Book): { label: string; cls: string; gold: boole
 
 // 카드 왼쪽 색 띠 — 국제수상 > 사서추천 > 교과연계 순
 const LIBRARIAN_SRC = new Set(["국립중앙도서관","국립어린이도서관","서울어린이도서관","세종도서"]);
-const CURRIC_SRC    = new Set(["교과연계도서","학교도서관저널","행복한아침독서","서울시교육청"]);
+const CURRIC_SRC    = new Set(["교과연계도서","학교도서관저널","행복한아침독서","서울시교육청","어린이도서연구회"]);
 function bookBandColor(book: Book): string {
   if ((book.awards ?? []).some(a => INTL_AWARD_NAMES.has(a.name))) return "#EF9F27";
   const srcs = book.sources ?? [book.source];
@@ -195,8 +196,8 @@ const COLLECTION_GROUPS = [
     iconCls: "browse-icon-teal", tip: "국립중앙 · 국립어린이 · 서울어린이 · 세종도서",
     sources: ["국립중앙도서관", "국립어린이도서관", "서울어린이도서관", "세종도서"] },
   { key: "독서교육", hanja: "讀", title: "독서교육", desc: "교사·독서기관이 권하는 책",
-    iconCls: "browse-icon-blue", tip: "교과연계도서 · 서울시교육청 · 학교도서관저널 · 행복한아침독서",
-    sources: ["교과연계도서", "서울시교육청", "학교도서관저널", "행복한아침독서"] },
+    iconCls: "browse-icon-blue", tip: "교과연계도서 · 서울시교육청 · 어린이도서연구회 · 학교도서관저널 · 행복한아침독서",
+    sources: ["교과연계도서", "서울시교육청", "어린이도서연구회", "학교도서관저널", "행복한아침독서"] },
 ];
 
 const AGE_CARD: Record<string, { title: string; sub: string }> = {
@@ -818,7 +819,7 @@ export default function Home() {
       <section className="hero">
         <h1 className="wordmark">책탐정 도서나루</h1>
         <p className="app-tagline">수상·추천으로 고른 그림책, 가까운 도서관까지</p>
-        <p className="stat-pill">검증된 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> · 국제 4대 상 + 국내 추천 8기관</p>
+        <p className="stat-pill">검증된 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> · 국제 4대 상 + 국내 추천 9기관</p>
 
         {/* 앱 소개 토글 */}
         <button className="about-toggle" onClick={() => setShowAbout(v => !v)}>
@@ -833,7 +834,7 @@ export default function Home() {
             <div className="about-sources">
               <strong>수상·추천 컬렉션별 특징</strong>
               <ul>
-                {(["칼데콧","안데르센","볼로냐","카네기","국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서","교과연계도서","학교도서관저널","행복한아침독서"] as const).map((src) => {
+                {(["칼데콧","안데르센","볼로냐","카네기","국립중앙도서관","국립어린이도서관","서울어린이도서관","서울시교육청","세종도서","교과연계도서","어린이도서연구회","학교도서관저널","행복한아침독서"] as const).map((src) => {
                   const cfg = SOURCE_CONFIG[src];
                   if (!cfg) return null;
                   return <li key={src}><span className="about-src-label">{cfg.label}</span> {cfg.desc}</li>;
