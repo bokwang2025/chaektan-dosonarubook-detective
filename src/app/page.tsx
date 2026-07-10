@@ -186,6 +186,13 @@ function bookBandColor(book: Book): string {
   if (srcs.some(s => CURRIC_SRC.has(s ?? "")))    return "#B04A5A";
   return "var(--card-border, #e2e8f0)";
 }
+function bookBandCat(book: Book): string {
+  if ((book.awards ?? []).some(a => INTL_AWARD_NAMES.has(a.name))) return "seal-award";
+  const srcs = book.sources ?? [book.source];
+  if (srcs.some(s => LIBRARIAN_SRC.has(s ?? ""))) return "seal-lib";
+  if (srcs.some(s => CURRIC_SRC.has(s ?? "")))    return "seal-edu";
+  return "";
+}
 
 // 둘러보기 카드 (검색 영역 재디자인)
 const COLLECTION_GROUPS = [
@@ -995,7 +1002,7 @@ export default function Home() {
                   >
                     <span className={`browse-icon ${g.iconCls}`}>{g.hanja}</span>
                     <span className="browse-card-title">{g.title}</span>
-                    <span className="browse-card-desc">{g.desc}</span>
+                    <span className="browse-card-desc">{g.tip}</span>
                   </button>
                 );
               })}
@@ -1025,35 +1032,25 @@ export default function Home() {
             ))}
           </div>
 
-          {/* 연령으로 둘러보기 */}
+          {/* 연령 · 형태로 둘러보기 (통합 칩) */}
           <div className="browse-section">
             <div className="browse-header">
-              <span className="browse-title">연령으로 둘러보기</span>
+              <span className="browse-title">연령 · 형태로 둘러보기</span>
             </div>
-            <div className="browse-cards">
+            <div className="format-browse-row">
               {availableAges.map((age) => {
                 const card = AGE_CARD[age] ?? { title: age, sub: "" };
                 return (
                   <button
                     key={age}
-                    className={`browse-card browse-card-age ${selectedAges.includes(age) ? "on" : ""}`}
+                    className={`format-browse-chip age-chip ${selectedAges.includes(age) ? "active" : ""}`}
                     onClick={() => toggleAge(age)}
                     data-tooltip={AGE_TOOLTIP[age]}
                   >
-                    <span className="browse-card-title">{card.title}</span>
-                    <span className="browse-card-desc">{card.sub}</span>
+                    {card.title}{card.sub ? <small className="age-chip-sub">{card.sub}</small> : null}
                   </button>
                 );
               })}
-            </div>
-          </div>
-
-          {/* 형태로 둘러보기 */}
-          <div className="browse-section">
-            <div className="browse-header">
-              <span className="browse-title">형태로 둘러보기</span>
-            </div>
-            <div className="format-browse-row">
               {FORMAT_BROWSE.map((f) => (
                 <button key={f.label} className="format-browse-chip" title={f.tip}
                   onClick={() => { resetAi(); setOrTags([]); setAndTags([]); setQuery(f.label); }}>
@@ -1151,10 +1148,11 @@ export default function Home() {
                   originalIsbn={book.isbn !== book.koreanIsbn ? book.isbn : undefined}
                   cachedUrl={CONFIRMED_COVERS[book.koreanIsbn]?.url || CONFIRMED_COVERS[book.isbn]?.url}
                 />
-                <div className={`cover-seal ${badge.cls}`}>
-                  {badge.intl ? (badge.gold ? <Award size={11}/> : <Medal size={11}/>) : <BookOpen size={11}/>}
-                  {badge.label}
-                </div>
+              </div>
+
+              <div className={`cover-seal ${badge.cls} ${bookBandCat(book)}`}>
+                {badge.intl ? (badge.gold ? <Award size={11}/> : <Medal size={11}/>) : <BookOpen size={11}/>}
+                {badge.label}
               </div>
 
               <h3 className="book-title">{book.koreanTitle}</h3>
@@ -1180,13 +1178,13 @@ export default function Home() {
               })()}
 
               <div className="card-btns">
-                <button className="library-btn activity-btn" title="이 책으로 할 수 있는 다중지능 독후활동을 봐요"
+                <button className="library-btn cta-btn" title="내 주변 도서관의 대출 가능 여부를 확인해요"
+                  onClick={(e) => { e.stopPropagation(); handleCheckLibrary(book); }}>
+                  <Library size={13}/> 도서관에서 찾기
+                </button>
+                <button className="library-btn lib-ghost activity-btn" title="이 책으로 할 수 있는 다중지능 독후활동을 봐요"
                   onClick={(e) => { e.stopPropagation(); openDetail(book, true); }}>
                   <Pencil size={13}/> 독후활동
-                </button>
-                <button className="library-btn lib-ghost" title="내 주변 도서관의 대출 가능 여부를 확인해요"
-                  onClick={(e) => { e.stopPropagation(); handleCheckLibrary(book); }}>
-                  <Library size={14}/> 도서관
                 </button>
               </div>
             </div>

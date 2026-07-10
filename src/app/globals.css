@@ -96,14 +96,13 @@ body {
 
 /* ── 컨트롤 패널 ───────────────────────── */
 .controls-container {
-  max-width: 880px; margin: 2rem auto 0;
-  background: var(--glass);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.7);
+  max-width: 960px; margin: 1.6rem auto 0;
+  background: transparent;
+  border: none;
   border-radius: var(--radius);
-  padding: 1.6rem 1.8rem;
+  padding: .4rem .2rem;
   display: flex; flex-direction: column; gap: 1.1rem;
-  box-shadow: var(--shadow-md), 0 0 0 1px rgba(0,0,0,0.04);
+  box-shadow: none;
 }
 
 /* ── 검색 탭 ────────────────────────────── */
@@ -1422,3 +1421,27 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 /* 상세 좌측 주 버튼(독후활동) 채움형 강조 */
 .detail-side-btn:not(.library-btn-ghost) { background: #0E6E6B !important; color: #fff !important; border: 0 !important; }
 .detail-side-btn:not(.library-btn-ghost):hover:not(:disabled) { background: #0A5250 !important; }
+
+
+/* ── 2026-07-10 B안 마감: 카드·칩·인장 (목업 정합) ── */
+/* 표지 3:4 통일 (풀블리드 크롭) */
+.card-cover-wrap { aspect-ratio: 3 / 4; overflow: hidden; border-radius: 10px; background: #eef3f2; }
+.card-cover-wrap img, .card-cover-wrap .book-cover-img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
+/* 인장: 표지 아래 배지형 (카테고리 3색) */
+.cover-seal { position: static; align-self: flex-start; margin: -0.15rem 0 -0.35rem;
+  font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 7px; pointer-events: none;
+  background: #f0f4f4; color: var(--text-sub, #64748b); }
+.cover-seal.seal-award { background: #FBF6E9; color: #B8860B; }
+.cover-seal.seal-lib   { background: #EAF4F3; color: #0E6E6B; }
+.cover-seal.seal-edu   { background: #F9EEF0; color: #B04A5A; }
+.cover-seal.badge-silver { background: #F0F3F6 !important; color: #7d8a99 !important; }
+
+/* 연령 칩 */
+.age-chip .age-chip-sub { margin-left: .35rem; font-size: .72rem; color: var(--text-sub, #6b7f7e); font-weight: 500; }
+.format-browse-chip.active { background: #0E6E6B; color: #fff; border-color: #0E6E6B; }
+.format-browse-chip.active .age-chip-sub { color: #cfe3e1; }
+
+/* 카드 버튼: 도서관에서 찾기(주) / 독후활동(보조) */
+.card-btns .cta-btn { background: #0E6E6B !important; color: #fff !important; border: 0 !important; }
+.card-btns .cta-btn:hover:not(:disabled) { background: #0A5250 !important; }
