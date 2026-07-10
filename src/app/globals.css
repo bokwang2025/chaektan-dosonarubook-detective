@@ -1398,3 +1398,22 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 .cover-zoom-caption { margin-top: .8rem; color: #cfe3e1; font-size: .85rem; text-align: center;
   max-width: min(92vw, 720px); line-height: 1.5; }
 .cover-zoom-overlay { flex-direction: column; }
+
+
+/* ── 2026-07-10 상세 모달 2단 레이아웃 (목업 반영) ── */
+.detail-modal { max-width: 880px !important; }
+.detail-body { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.detail-side { background: linear-gradient(180deg, #f2f7f6, #e9f1f0); border-radius: 14px;
+  padding: 1.1rem; display: flex; flex-direction: column; gap: .55rem; }
+.detail-side .detail-cover { width: 100%; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 10px 26px rgba(10, 60, 58, .18); transition: transform .15s; }
+.detail-side .detail-cover:hover { transform: scale(1.02); }
+.detail-side-btn { width: 100%; justify-content: center; margin-top: .2rem; }
+.detail-main { min-width: 0; }
+.detail-info { margin-bottom: 1.2rem; }
+@media (max-width: 640px) {
+  .detail-body { grid-template-columns: 1fr; gap: 1rem; }
+  .detail-side { flex-direction: column; align-items: center; padding: 1rem; }
+  .detail-side .detail-cover { width: 200px; }
+  .detail-side-btn { max-width: 320px; }
+}

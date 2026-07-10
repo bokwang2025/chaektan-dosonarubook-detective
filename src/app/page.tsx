@@ -1251,7 +1251,8 @@ export default function Home() {
             <button className="modal-close" onClick={() => setDetailBook(null)}>
               <X size={18} />
             </button>
-            <div className="detail-header">
+            <div className="detail-body">
+              <div className="detail-side">
               <div className="detail-cover" onClick={() => setCoverZoom(detailBook.koreanIsbn || detailBook.isbn)} style={{ cursor: "zoom-in" }} title="표지를 크게 보기">
                 <BookCover
                   isbn={detailBook.koreanIsbn || detailBook.isbn}
@@ -1265,6 +1266,14 @@ export default function Home() {
                 />
                 <span className="zoom-hint">🔍 크게 보기</span>
               </div>
+              <button className="library-btn detail-side-btn" onClick={() => { setDetailAutoActivity(true); setTimeout(() => document.querySelector(".mi-activity-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80); }}>
+                <Pencil size={13} /> 독후활동 보기
+              </button>
+              <button className="library-btn library-btn-ghost detail-side-btn" onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
+                <Library size={13} /> 대출 가능 도서관 확인
+              </button>
+              </div>
+              <div className="detail-main">
               <div className="detail-info">
                 <h2 className="modal-title">{detailBook.koreanTitle}</h2>
                 {detailBook.originalTitle && detailBook.originalTitle !== detailBook.koreanTitle && (
@@ -1330,16 +1339,7 @@ export default function Home() {
                     ));
                   })()}
                 </div>
-                <button className="library-btn" style={{ marginTop: ".8rem" }} onClick={() => { setDetailAutoActivity(true); setTimeout(() => document.querySelector(".mi-activity-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80); }}>
-                  <Pencil size={13} />
-                  독후활동 보기
-                </button>
-                <button className="library-btn library-btn-ghost" style={{ marginTop: ".45rem" }} onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
-                  <Library size={13} />
-                  대출 가능 도서관 확인
-                </button>
               </div>
-            </div>
 
             <div className="detail-summary-section">
               <div className="detail-section-title">줄거리</div>
@@ -1396,6 +1396,8 @@ export default function Home() {
             )}
 
             {/* hook은 카드 목록에서만 노출 — 수정 2: 모달에서 제거 */}
+              </div>
+            </div>
           </div>
         </div>
       )}
