@@ -979,7 +979,7 @@ export default function Home() {
               <span className="browse-title">컬렉션으로 둘러보기</span>
               <span className="browse-hint">마우스를 올리면 포함된 출처가 떠요</span>
             </div>
-            <div className="browse-cards">
+            <div className="browse-cards browse-cards-collection">
               {COLLECTION_GROUPS.map((g) => {
                 const hasSelected = g.sources.some((src) => selectedSources.includes(src));
                 const isExpanded  = expandedGroups.includes(g.key);
@@ -1528,7 +1528,7 @@ export default function Home() {
       {coverZoom && (
         <div className="cover-zoom-overlay" onClick={() => setCoverZoom(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`/api/book-cover?isbn=${coverZoom}`} alt="표지 확대" className="cover-zoom-img" />
+          <img src={(() => { const c = CONFIRMED_COVERS[coverZoom]?.url; return c && c.includes("cover500") ? c : `/api/book-cover?isbn=${coverZoom}`; })()} alt="표지 확대" className="cover-zoom-img" />
           {detailBook && <div className="cover-zoom-caption">{detailBook.koreanTitle} · {detailBook.author}</div>}
           <button className="cover-zoom-close" onClick={() => setCoverZoom(null)} aria-label="닫기">✕</button>
         </div>

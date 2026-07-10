@@ -1354,7 +1354,7 @@ body {
 /* ── 표지 라이트박스 ──────────────────────────── */
 .cover-zoom-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.8);
   display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
-.cover-zoom-img { width: auto; height: auto; max-width: min(92vw, 720px); max-height: 88vh; object-fit: contain; box-shadow: 0 30px 90px rgba(0,0,0,.5); border-radius: 10px; }
+.cover-zoom-img { width: min(88vw, 620px); height: auto; max-height: 88vh; object-fit: contain; box-shadow: 0 30px 90px rgba(0,0,0,.5); border-radius: 10px; }
 .cover-zoom-close { position: absolute; top: 20px; right: 24px; font-size: 24px; color: #fff;
   background: transparent; border: none; cursor: pointer; }
 
@@ -1379,9 +1379,9 @@ body {
 body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -apple-system, "Apple SD Gothic Neo", sans-serif; letter-spacing: -0.01em; }
 
 /* 컬렉션 카드 상단 3색 보더 (국제수상 골드 · 사서추천 틸 · 독서교육 로즈) */
-.browse-cards .browse-card:nth-child(1) { border-top: 3px solid #B8860B; }
-.browse-cards .browse-card:nth-child(2) { border-top: 3px solid #0E6E6B; }
-.browse-cards .browse-card:nth-child(3) { border-top: 3px solid #B04A5A; }
+.browse-cards-collection .browse-card:nth-child(1) { border-top: 3px solid #B8860B; }
+.browse-cards-collection .browse-card:nth-child(2) { border-top: 3px solid #0E6E6B; }
+.browse-cards-collection .browse-card:nth-child(3) { border-top: 3px solid #B04A5A; }
 .browse-icon-teal { background: #EAF4F3; color: #0E6E6B; }
 
 /* 상세 모달: 표지 크게 + 확대 힌트 */
@@ -1417,3 +1417,8 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
   .detail-side .detail-cover { width: 200px; }
   .detail-side-btn { max-width: 320px; }
 }
+
+
+/* 상세 좌측 주 버튼(독후활동) 채움형 강조 */
+.detail-side-btn:not(.library-btn-ghost) { background: #0E6E6B !important; color: #fff !important; border: 0 !important; }
+.detail-side-btn:not(.library-btn-ghost):hover:not(:disabled) { background: #0A5250 !important; }
