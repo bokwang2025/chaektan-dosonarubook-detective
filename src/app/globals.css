@@ -1426,7 +1426,8 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 /* ── 2026-07-10 B안 마감: 카드·칩·인장 (목업 정합) ── */
 /* 표지 3:4 통일 (풀블리드 크롭) */
 .card-cover-wrap { aspect-ratio: 3 / 4; overflow: hidden; border-radius: 10px; background: #eef3f2; }
-.card-cover-wrap img, .card-cover-wrap .book-cover-img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+.card-cover-wrap { display: flex; align-items: center; justify-content: center; }
+.card-cover-wrap img, .card-cover-wrap .book-cover-img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
 
 /* 인장: 표지 아래 배지형 (카테고리 3색) */
 .cover-seal { position: static; align-self: flex-start; margin: -0.15rem 0 -0.35rem;
