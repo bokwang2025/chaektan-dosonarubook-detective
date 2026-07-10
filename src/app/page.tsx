@@ -180,18 +180,18 @@ function pickDisplayBadge(book: Book): { label: string; cls: string; gold: boole
 const LIBRARIAN_SRC = new Set(["국립중앙도서관","국립어린이도서관","서울어린이도서관","세종도서"]);
 const CURRIC_SRC    = new Set(["교과연계도서","학교도서관저널","행복한아침독서","서울시교육청","어린이도서연구회"]);
 function bookBandColor(book: Book): string {
-  if ((book.awards ?? []).some(a => INTL_AWARD_NAMES.has(a.name))) return "#EF9F27";
+  if ((book.awards ?? []).some(a => INTL_AWARD_NAMES.has(a.name))) return "#B8860B";
   const srcs = book.sources ?? [book.source];
-  if (srcs.some(s => LIBRARIAN_SRC.has(s ?? ""))) return "#1D9E75";
-  if (srcs.some(s => CURRIC_SRC.has(s ?? "")))    return "#378ADD";
+  if (srcs.some(s => LIBRARIAN_SRC.has(s ?? ""))) return "#0E6E6B";
+  if (srcs.some(s => CURRIC_SRC.has(s ?? "")))    return "#B04A5A";
   return "var(--card-border, #e2e8f0)";
 }
 
 // 둘러보기 카드 (검색 영역 재디자인)
 const COLLECTION_GROUPS = [
   { key: "국제수상", hanja: "賞", title: "국제수상", desc: "세계가 인정한 그림책",
-    iconCls: "browse-icon-gold", tip: "칼데콧 · 안데르센 · 볼로냐 · 카네기",
-    sources: ["칼데콧", "안데르센", "볼로냐", "카네기"] },
+    iconCls: "browse-icon-gold", tip: "볼로냐 · 안데르센 · 카네기 · 칼데콧",
+    sources: ["볼로냐", "안데르센", "카네기", "칼데콧"] },
   { key: "사서추천", hanja: "推", title: "사서추천", desc: "도서관·공공기관이 권하는 책",
     iconCls: "browse-icon-teal", tip: "국립중앙 · 국립어린이 · 서울어린이 · 세종도서",
     sources: ["국립중앙도서관", "국립어린이도서관", "서울어린이도서관", "세종도서"] },
@@ -1263,6 +1263,7 @@ export default function Home() {
                     CONFIRMED_COVERS[detailBook.isbn]?.url
                   }
                 />
+                <span className="zoom-hint">🔍 크게 보기</span>
               </div>
               <div className="detail-info">
                 <h2 className="modal-title">{detailBook.koreanTitle}</h2>
@@ -1329,7 +1330,11 @@ export default function Home() {
                     ));
                   })()}
                 </div>
-                <button className="library-btn" style={{ marginTop: ".8rem" }} onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
+                <button className="library-btn" style={{ marginTop: ".8rem" }} onClick={() => { setDetailAutoActivity(true); setTimeout(() => document.querySelector(".mi-activity-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80); }}>
+                  <Pencil size={13} />
+                  독후활동 보기
+                </button>
+                <button className="library-btn library-btn-ghost" style={{ marginTop: ".45rem" }} onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
                   <Library size={13} />
                   대출 가능 도서관 확인
                 </button>
@@ -1360,6 +1365,7 @@ export default function Home() {
             </div>
 
             {/* 다중지능 독후활동 */}
+            <div className="mi-activity-anchor" />
             <ReadingActivity
               key={detailBook.id}
               title={detailBook.koreanTitle}
@@ -1521,6 +1527,7 @@ export default function Home() {
         <div className="cover-zoom-overlay" onClick={() => setCoverZoom(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`/api/book-cover?isbn=${coverZoom}`} alt="표지 확대" className="cover-zoom-img" />
+          {detailBook && <div className="cover-zoom-caption">{detailBook.koreanTitle} · {detailBook.author}</div>}
           <button className="cover-zoom-close" onClick={() => setCoverZoom(null)} aria-label="닫기">✕</button>
         </div>
       )}

@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Outfit:wght@600;700&display=swap');
 @import "tailwindcss";
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 /* v2 */
 
 /* ── 라이트 테마 변수 ─────────────────── */
@@ -1252,7 +1253,7 @@ body {
 }
 .browse-icon-gold { background: #FAEEDA; color: #854F0B; }
 .browse-icon-teal { background: #E1F5EE; color: #0F6E56; }
-.browse-icon-blue { background: #E6F1FB; color: #185FA5; }
+.browse-icon-blue { background: #F9EEF0; color: #B04A5A; }
 .browse-card-title { font-size: .95rem; font-weight: 700; color: var(--text); }
 .browse-card-desc { font-size: .76rem; color: var(--text-sub); }
 .browse-card-age { align-items: center; text-align: center; padding: .85rem .6rem; }
@@ -1353,7 +1354,7 @@ body {
 /* ── 표지 라이트박스 ──────────────────────────── */
 .cover-zoom-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.8);
   display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
-.cover-zoom-img { width: min(92vw, 540px); height: auto; max-height: 92vh; object-fit: contain; box-shadow: 0 8px 40px rgba(0,0,0,.5); border-radius: 6px; }
+.cover-zoom-img { width: auto; height: auto; max-width: min(92vw, 720px); max-height: 88vh; object-fit: contain; box-shadow: 0 30px 90px rgba(0,0,0,.5); border-radius: 10px; }
 .cover-zoom-close { position: absolute; top: 20px; right: 24px; font-size: 24px; color: #fff;
   background: transparent; border: none; cursor: pointer; }
 
@@ -1372,3 +1373,28 @@ body {
   display: inline-flex; align-items: center; font-size: 11px; padding: 2px 7px;
   border-radius: var(--radius-md, .4rem); background: #F1EFE8; color: #5F5E5A; margin-left: 4px;
 }
+
+
+/* ── 2026-07-10 UI B안: Pretendard + 3분류 색 규칙 + 상세 모달 개선 ── */
+body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -apple-system, "Apple SD Gothic Neo", sans-serif; letter-spacing: -0.01em; }
+
+/* 컬렉션 카드 상단 3색 보더 (국제수상 골드 · 사서추천 틸 · 독서교육 로즈) */
+.browse-cards .browse-card:nth-child(1) { border-top: 3px solid #B8860B; }
+.browse-cards .browse-card:nth-child(2) { border-top: 3px solid #0E6E6B; }
+.browse-cards .browse-card:nth-child(3) { border-top: 3px solid #B04A5A; }
+.browse-icon-teal { background: #EAF4F3; color: #0E6E6B; }
+
+/* 상세 모달: 표지 크게 + 확대 힌트 */
+.detail-cover { width: 150px; position: relative; }
+.zoom-hint { position: absolute; right: 6px; bottom: 6px; background: rgba(0,0,0,.55); color: #fff;
+  font-size: .66rem; border-radius: 999px; padding: .22rem .55rem; pointer-events: none; }
+
+/* 보조 버튼(도서관) — 주 버튼은 기존 .library-btn 채움형 유지 */
+.library-btn-ghost { background: #fff !important; color: var(--accent, #0E6E6B) !important;
+  border: 1.5px solid var(--accent, #0E6E6B) !important; }
+.library-btn-ghost:hover:not(:disabled) { background: #EAF4F3 !important; }
+
+/* 표지 확대 캡션 */
+.cover-zoom-caption { margin-top: .8rem; color: #cfe3e1; font-size: .85rem; text-align: center;
+  max-width: min(92vw, 720px); line-height: 1.5; }
+.cover-zoom-overlay { flex-direction: column; }
