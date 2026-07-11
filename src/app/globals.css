@@ -1482,3 +1482,7 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 }
 .dl-menu button:hover { background: #f6f2e9; }
 .dl-menu button:disabled { color: #b9b2a4; cursor: default; background: none; }
+
+/* 찜 전체 비우기 버튼 — 찜 목록 화면에서만 노출 */
+.fav-clear-pill { color: #B04A5A; border-color: #e8cdd2; }
+.fav-clear-pill:hover { background: #faf0f2; border-color: #B04A5A; }

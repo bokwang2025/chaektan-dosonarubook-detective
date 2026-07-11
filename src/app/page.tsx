@@ -286,6 +286,11 @@ export default function Home() {
       return next;
     });
   };
+  const clearFavs = () => {
+    if (!window.confirm(`찜한 책 ${favIds.length}권을 모두 지울까요?\n지운 찜 목록은 되돌릴 수 없어요.`)) return;
+    setFavIds([]);
+    try { localStorage.setItem("dosunaru_favs", "[]"); } catch { /* noop */ }
+  };
   // ── 목록 CSV 저장 ──
   const downloadList = (kind: "current" | "favs" = "current") => {
     const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -1204,6 +1209,15 @@ export default function Home() {
               >
                 <Heart size={12} fill={showFavsOnly ? "currentColor" : "none"} /> 찜한 책{favIds.length > 0 ? ` ${favIds.length}` : ""}
               </button>
+              {showFavsOnly && favIds.length > 0 && (
+                <button
+                  className="sort-pill fav-clear-pill"
+                  onClick={clearFavs}
+                  data-tooltip="찜한 책을 모두 지워요 — 확인 후 지워집니다"
+                >
+                  <X size={12} /> 찜 비우기
+                </button>
+              )}
               <span className="dl-wrap">
                 <button
                   className="sort-pill dl-pill"
