@@ -275,6 +275,7 @@ export default function Home() {
   // ── 찜하기 (로그인 불필요 — 브라우저 저장) ──
   const [favIds,        setFavIds]        = useState<string[]>([]);
   const [showFavsOnly,  setShowFavsOnly]  = useState(false);
+  const [dlMenuOpen,    setDlMenuOpen]    = useState(false); // 목록 저장 드롭다운
   useEffect(() => {
     try { const s = localStorage.getItem("dosunaru_favs"); if (s) setFavIds(JSON.parse(s)); } catch { /* noop */ }
   }, []);
@@ -286,13 +287,15 @@ export default function Home() {
     });
   };
   // ── 목록 CSV 저장 ──
-  const downloadList = () => {
+  const downloadList = (kind: "current" | "favs" = "current") => {
     const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const header = ["제목", "작가", "출판사", "연령", "수상·추천", "ISBN", "한 줄 소개"];
-    const rows = books.map(b => [
+    const header = ["제목", "작가", "출판사", "한 줄 소개", "연령", "수상·추천", "ISBN"];
+    const list = kind === "favs" ? INITIAL_BOOKS.filter(b => favIds.includes(b.id)) : books;
+    const rows = list.map(b => [
       b.koreanTitle, b.author, b.publisher || "",
-      b.ageGroup || "", (b.sourceLabels && b.sourceLabels.length ? b.sourceLabels : [b.sourceLabel]).filter(Boolean).join(" / "),
-      b.koreanIsbn || b.isbn || "", b.hook || "",
+      b.hook || "", b.ageGroup || "",
+      (b.sourceLabels && b.sourceLabels.length ? b.sourceLabels : [b.sourceLabel]).filter(Boolean).join(" / "),
+      b.koreanIsbn || b.isbn || "",
     ]);
     const csv = "\uFEFF" + [header, ...rows].map(r => r.map(esc).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -300,7 +303,7 @@ export default function Home() {
     const a = document.createElement("a");
     const d = new Date();
     a.href = url;
-    a.download = `책탐정도서나루_목록_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.csv`;
+    a.download = `책탐정도서나루_${kind === "favs" ? "찜한목록" : "목록"}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -604,6 +607,26 @@ export default function Home() {
   };
 
   const resetAi = () => { setAiMode(false); setAiEngine(""); setAiError(""); filterBooks(); };
+
+  // 찜한 책 모아보기 — 직전 검색 상태를 기억해두고 찜 목록만 표시, 해제 시 그대로 복원
+  const preFavRef = useRef<null | { query: string; orTags: string[]; andTags: string[]; ages: string[]; sources: string[]; koreanOnly: boolean; aiMode: boolean; aiEngine: "claude"|"smart"|""; aiBooks: Book[] | null }>(null);
+  const openFavsView = () => {
+    preFavRef.current = { query, orTags, andTags, ages: selectedAges, sources: selectedSources, koreanOnly: showKoreanOnly, aiMode, aiEngine, aiBooks: aiMode ? books : null };
+    setQuery(""); setOrTags([]); setAndTags([]);
+    setSelectedAges([]); setSelectedSources([]); setShowKoreanOnly(false);
+    setAiMode(false); setAiEngine(""); setAiError("");
+    setShowFavsOnly(true);
+  };
+  const closeFavsView = () => {
+    setShowFavsOnly(false);
+    const s = preFavRef.current;
+    if (s) {
+      setQuery(s.query); setOrTags(s.orTags); setAndTags(s.andTags);
+      setSelectedAges(s.ages); setSelectedSources(s.sources); setShowKoreanOnly(s.koreanOnly);
+      if (s.aiMode && s.aiBooks) { setAiMode(true); setAiEngine(s.aiEngine); setBooks(s.aiBooks); }
+      preFavRef.current = null;
+    }
+  };
 
   const switchTab = (mode: "keyword" | "ai") => {
     setSearchMode(mode);
@@ -1103,6 +1126,19 @@ export default function Home() {
               {aiEngine === "claude" ? "Claude AI 추천" : "스마트 검색 결과"}
               {" · "}<strong>{books.length}권</strong>
             </span>
+            <span className="dl-wrap">
+              <button className="ai-banner-slim-close" onClick={() => setDlMenuOpen(v => !v)}><Download size={11} /> 목록 저장</button>
+              {dlMenuOpen && (
+                <>
+                  <span className="dl-menu-backdrop" onClick={() => setDlMenuOpen(false)} />
+                  <span className="dl-menu">
+                    <button onClick={() => { downloadList("current"); setDlMenuOpen(false); }}>AI 추천 결과 전체 ({books.length}권)</button>
+                    <button disabled={favIds.length === 0} onClick={() => { downloadList("favs"); setDlMenuOpen(false); }}>찜한 목록 ({favIds.length}권)</button>
+                  </span>
+                </>
+              )}
+            </span>
+            <button className="ai-banner-slim-close" onClick={openFavsView}><Heart size={11} /> 찜한 책{favIds.length > 0 ? ` ${favIds.length}` : ""}</button>
             <button className="ai-banner-slim-close" onClick={resetAi}><X size={11} /> 일반 검색</button>
           </div>
         )}
@@ -1163,18 +1199,29 @@ export default function Home() {
               })}
               <button
                 className={`sort-pill fav-pill ${showFavsOnly ? "on" : ""}`}
-                onClick={() => { setShowFavsOnly(v => !v); setAiMode(false); }}
+                onClick={() => { if (showFavsOnly) closeFavsView(); else openFavsView(); }}
                 data-tooltip="하트로 찜해 둔 책만 모아 봐요 — 로그인 없이 이 브라우저에 저장됩니다"
               >
                 <Heart size={12} fill={showFavsOnly ? "currentColor" : "none"} /> 찜한 책{favIds.length > 0 ? ` ${favIds.length}` : ""}
               </button>
-              <button
-                className="sort-pill dl-pill"
-                onClick={downloadList}
-                data-tooltip="지금 보이는 목록을 CSV 파일로 저장해요 — 엑셀·numbers에서 열립니다"
-              >
-                <Download size={12} /> 목록 저장
-              </button>
+              <span className="dl-wrap">
+                <button
+                  className="sort-pill dl-pill"
+                  onClick={() => setDlMenuOpen(v => !v)}
+                  data-tooltip="목록을 CSV 파일로 저장해요 — 엑셀·numbers에서 열립니다"
+                >
+                  <Download size={12} /> 목록 저장
+                </button>
+                {dlMenuOpen && (
+                  <>
+                    <span className="dl-menu-backdrop" onClick={() => setDlMenuOpen(false)} />
+                    <span className="dl-menu">
+                      <button onClick={() => { downloadList("current"); setDlMenuOpen(false); }}>검색 결과 전체 ({books.length}권)</button>
+                      <button disabled={favIds.length === 0} onClick={() => { downloadList("favs"); setDlMenuOpen(false); }}>찜한 목록 ({favIds.length}권)</button>
+                    </span>
+                  </>
+                )}
+              </span>
             </div>
           </div>
         </div>
@@ -1331,6 +1378,13 @@ export default function Home() {
               </button>
               <button className="library-btn library-btn-ghost detail-side-btn" onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
                 <Library size={13} /> 대출 가능 도서관 확인
+              </button>
+              <button
+                className={`library-btn detail-side-btn fav-side-btn ${favIds.includes(detailBook.id) ? "on" : ""}`}
+                onClick={() => toggleFav(detailBook.id)}
+                title="로그인 없이 이 브라우저에 저장돼요"
+              >
+                <Heart size={13} fill={favIds.includes(detailBook.id) ? "currentColor" : "none"} /> {favIds.includes(detailBook.id) ? "찜한 책 ✓" : "찜하기"}
               </button>
               </div>
               <div className="detail-main">

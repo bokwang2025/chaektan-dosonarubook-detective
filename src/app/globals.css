@@ -1458,3 +1458,27 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 .fav-btn.on { color: #B04A5A; border-color: rgba(176,74,90,.35); }
 .fav-pill.on { background: #B04A5A !important; border-color: #B04A5A !important; color: #fff !important; }
 .fav-pill, .dl-pill { display: inline-flex; align-items: center; gap: 4px; }
+
+
+/* 상세 모달 찜 버튼 */
+.detail-side-btn.fav-side-btn { background: #fff !important; color: #B04A5A !important;
+  border: 1.5px solid rgba(176,74,90,.45) !important; }
+.detail-side-btn.fav-side-btn:hover:not(:disabled) { background: #F9EEF0 !important; }
+.detail-side-btn.fav-side-btn.on { background: #B04A5A !important; color: #fff !important; border-color: #B04A5A !important; }
+
+/* 목록 저장 드롭다운 (검색 결과 전체 / 찜한 목록) */
+.dl-wrap { position: relative; display: inline-flex; }
+.dl-menu-backdrop { position: fixed; inset: 0; z-index: 49; }
+.dl-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 50;
+  display: flex; flex-direction: column; min-width: 188px;
+  background: #fff; border: 1px solid #e3ded4; border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(60, 50, 30, 0.14); overflow: hidden; padding: 4px;
+}
+.dl-menu button {
+  border: 0; background: none; cursor: pointer; text-align: left;
+  padding: 9px 12px; font-size: 13px; font-weight: 600; color: #4a4234;
+  border-radius: 8px; font-family: inherit; white-space: nowrap;
+}
+.dl-menu button:hover { background: #f6f2e9; }
+.dl-menu button:disabled { color: #b9b2a4; cursor: default; background: none; }
