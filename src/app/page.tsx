@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, MapPin, Library, BookOpen, Award, Medal, BadgeCheck, Pencil,
-  Sparkles, X, ChevronDown, Loader2, Info,
+  Sparkles, X, ChevronDown, Loader2, Info, Heart, Download,
 } from "lucide-react";
 import { getRelatedKeywords, tokenize, calcRelevance, rankByRelevance, rankForAi, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank, INTL_AWARD_NAMES } from "../lib/smartSearch";
 import libraryCounts from "../data/library_counts.json";
@@ -272,6 +272,38 @@ export default function Home() {
   const toggleWeight = (id: string) =>
     setWeightOpenIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
   const [sortModes,      setSortModes]      = useState<Array<"recent"|"library">>([]);
+  // ── 찜하기 (로그인 불필요 — 브라우저 저장) ──
+  const [favIds,        setFavIds]        = useState<string[]>([]);
+  const [showFavsOnly,  setShowFavsOnly]  = useState(false);
+  useEffect(() => {
+    try { const s = localStorage.getItem("dosunaru_favs"); if (s) setFavIds(JSON.parse(s)); } catch { /* noop */ }
+  }, []);
+  const toggleFav = (id: string) => {
+    setFavIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      try { localStorage.setItem("dosunaru_favs", JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  };
+  // ── 목록 CSV 저장 ──
+  const downloadList = () => {
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const header = ["제목", "작가", "출판사", "연령", "수상·추천", "ISBN", "한 줄 소개"];
+    const rows = books.map(b => [
+      b.koreanTitle, b.author, b.publisher || "",
+      b.ageGroup || "", (b.sourceLabels && b.sourceLabels.length ? b.sourceLabels : [b.sourceLabel]).filter(Boolean).join(" / "),
+      b.koreanIsbn || b.isbn || "", b.hook || "",
+    ]);
+    const csv = "\uFEFF" + [header, ...rows].map(r => r.map(esc).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const d = new Date();
+    a.href = url;
+    a.download = `책탐정도서나루_목록_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isPreciseQuery = useMemo(() => {
@@ -329,7 +361,7 @@ export default function Home() {
   const filterBooks = useCallback(() => {
     if (aiMode) return;
 
-    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || orTags.length > 0 || andTags.length > 0 || sortModes.length > 0;
+    const hasFilter = query.trim() || selectedAges.length > 0 || selectedSources.length > 0 || showKoreanOnly || showActivityOnly || orTags.length > 0 || andTags.length > 0 || sortModes.length > 0 || showFavsOnly;
 
     // 아무 필터·검색어도 없으면 가중치 정렬 전체 목록 (더보기로 확장)
     if (!hasFilter) {
@@ -340,6 +372,8 @@ export default function Home() {
 
     let filtered = booksWithIsbn;
 
+    if (showFavsOnly)
+      filtered = filtered.filter((b) => favIds.includes(b.id));
     if (showKoreanOnly)
       filtered = filtered.filter((b) => b.koreanIsbn && b.koreanIsbn.length > 0);
     // 독서활동 있음: 활동 자료 보유 책을 상단 우선 정렬
@@ -459,7 +493,7 @@ export default function Home() {
 
     setResultCount(filtered.length);
     setBooks(showAll ? filtered : filtered.slice(0, 60));
-  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, orTags, andTags, sortModes]); // showAll 포함 — 기본 화면 더보기 지원
+  }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, orTags, andTags, sortModes, showFavsOnly, favIds]); // showAll 포함 — 기본 화면 더보기 지원
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -815,7 +849,7 @@ export default function Home() {
 
   const hasAnyFilter =
     Boolean(query.trim()) || selectedAges.length > 0 ||
-    selectedSources.length > 0 || orTags.length > 0 || andTags.length > 0;
+    selectedSources.length > 0 || orTags.length > 0 || andTags.length > 0 || showFavsOnly;
 
   // ── 렌더 ───────────────────────────────────
   return (
@@ -1127,6 +1161,20 @@ export default function Home() {
                   </button>
                 );
               })}
+              <button
+                className={`sort-pill fav-pill ${showFavsOnly ? "on" : ""}`}
+                onClick={() => { setShowFavsOnly(v => !v); setAiMode(false); }}
+                data-tooltip="하트로 찜해 둔 책만 모아 봐요 — 로그인 없이 이 브라우저에 저장됩니다"
+              >
+                <Heart size={12} fill={showFavsOnly ? "currentColor" : "none"} /> 찜한 책{favIds.length > 0 ? ` ${favIds.length}` : ""}
+              </button>
+              <button
+                className="sort-pill dl-pill"
+                onClick={downloadList}
+                data-tooltip="지금 보이는 목록을 CSV 파일로 저장해요 — 엑셀·numbers에서 열립니다"
+              >
+                <Download size={12} /> 목록 저장
+              </button>
             </div>
           </div>
         </div>
@@ -1148,6 +1196,14 @@ export default function Home() {
                   originalIsbn={book.isbn !== book.koreanIsbn ? book.isbn : undefined}
                   cachedUrl={CONFIRMED_COVERS[book.koreanIsbn]?.url || CONFIRMED_COVERS[book.isbn]?.url}
                 />
+                <button
+                  className={`fav-btn ${favIds.includes(book.id) ? "on" : ""}`}
+                  title={favIds.includes(book.id) ? "찜 해제" : "찜하기 — 이 브라우저에 저장돼요"}
+                  aria-label="찜하기"
+                  onClick={(e) => { e.stopPropagation(); toggleFav(book.id); }}
+                >
+                  <Heart size={15} fill={favIds.includes(book.id) ? "currentColor" : "none"} />
+                </button>
               </div>
 
               <div className={`cover-seal ${badge.cls} ${bookBandCat(book)}`}>
@@ -1191,7 +1247,13 @@ export default function Home() {
           );
         })}
 
-        {books.length === 0 && (
+        {books.length === 0 && showFavsOnly && !aiMode ? (
+          <div className="empty-state">
+            <Heart size={36} style={{ color: "#B04A5A", opacity: .5 }} />
+            <p>아직 찜한 책이 없어요.</p>
+            <small>도서 카드의 하트를 누르면 여기에 모여요 — 로그인 없이 이 브라우저에 저장됩니다.</small>
+          </div>
+        ) : books.length === 0 && (
           <div className="empty-state">
             {aiMode ? (
               <>

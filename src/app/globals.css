@@ -1446,3 +1446,15 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 /* 카드 버튼: 도서관에서 찾기(주) / 독후활동(보조) */
 .card-btns .cta-btn { background: #0E6E6B !important; color: #fff !important; border: 0 !important; }
 .card-btns .cta-btn:hover:not(:disabled) { background: #0A5250 !important; }
+
+
+/* ── 2026-07-11 찜하기 + 목록 저장 ── */
+.card-cover-wrap { position: relative; }
+.fav-btn { position: absolute; top: 8px; right: 8px; z-index: 2;
+  width: 30px; height: 30px; border-radius: 999px; border: 1px solid rgba(0,0,0,.06);
+  background: rgba(255,255,255,.92); color: #9aabaa; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform .12s, color .12s; }
+.fav-btn:hover { transform: scale(1.12); color: #B04A5A; }
+.fav-btn.on { color: #B04A5A; border-color: rgba(176,74,90,.35); }
+.fav-pill.on { background: #B04A5A !important; border-color: #B04A5A !important; color: #fff !important; }
+.fav-pill, .dl-pill { display: inline-flex; align-items: center; gap: 4px; }
