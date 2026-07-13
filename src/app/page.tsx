@@ -322,6 +322,7 @@ export default function Home() {
       b.koreanTitle.toLowerCase().includes(q) ||
       b.originalTitle.toLowerCase().includes(q) ||
       b.author.toLowerCase().includes(q) ||
+      (qNorm.length >= 2 && b.koreanTitle.toLowerCase().replace(/[^0-9a-z가-힣]/g, "").includes(qNorm)) ||
       (qNorm.length >= 2 && (b.authorSearch || "").includes(qNorm))
     );
   }, [query, booksWithIsbn]);
@@ -404,6 +405,7 @@ export default function Home() {
         b.koreanTitle.toLowerCase().includes(q) ||
         b.originalTitle.toLowerCase().includes(q) ||
         b.author.toLowerCase().includes(q) ||
+        (qNorm.length >= 2 && b.koreanTitle.toLowerCase().replace(/[^0-9a-z가-힣]/g, "").includes(qNorm)) ||
         (qNorm.length >= 2 && (b.authorSearch || "").includes(qNorm));
       const exactTagHit = (b: Book) => b.tags.some((t) => t.toLowerCase() === q);
       const taHits = filtered.filter(titleAuthorHit);
