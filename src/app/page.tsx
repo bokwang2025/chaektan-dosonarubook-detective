@@ -720,9 +720,9 @@ export default function Home() {
 
       // libSrchByBook 1회 호출
       type RawLib = { lib: { libCode: string; libName: string; address: string; tel: string; homepage: string; latitude: string; longitude: string } };
-      const fetchLibs = async (region: string, pageSize = 10): Promise<RawLib[]> => {
+      const fetchLibs = async (region: string, pageSize = 10, pageNo = 1): Promise<RawLib[]> => {
         try {
-          const url = `${BASE_LIB}/libSrchByBook?authKey=${LIB_KEY}&isbn=${isbn}&region=${region}&pageSize=${pageSize}&format=json`;
+          const url = `${BASE_LIB}/libSrchByBook?authKey=${LIB_KEY}&isbn=${isbn}&region=${region}&pageSize=${pageSize}&pageNo=${pageNo}&format=json`;
           const res = await fetch(url);
           const data = await res.json();
           return (data?.response?.libs ?? []) as RawLib[];
@@ -733,7 +733,11 @@ export default function Home() {
       let rawLibs: RawLib[] = [];
       if (loc) {
         const region = regionFromCoords(loc.lat, loc.lng);
-        rawLibs = await fetchLibs(region, 200);
+        rawLibs = await fetchLibs(region, 500);
+        if (rawLibs.length === 500) {
+          const page2 = await fetchLibs(region, 500, 2);
+          rawLibs = [...rawLibs, ...page2];
+        }
         if (rawLibs.length < 3) {
           const extras = await Promise.all(
             ["11", "31"].filter(r => r !== region).map(r => fetchLibs(r, 50))

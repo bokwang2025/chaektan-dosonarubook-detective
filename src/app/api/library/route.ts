@@ -90,7 +90,7 @@ async function resolveLibraries(isbn: string, userLat: number | null, userLng: n
   if (userLat && userLng) {
     // 위치 있음: 해당 지역 1번 호출
     const region = regionFromCoords(userLat, userLng);
-    libs = await fetchLibs(isbn, region, 20);
+    libs = await fetchLibs(isbn, region, 500); // 가나다순 상위만 잘리는 편향 방지 — 소장관 전체를 받아 거리 정렬
 
     // 부족하면 서울 + 경기 보완
     if (libs.length < 3) {
