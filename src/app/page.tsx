@@ -1052,7 +1052,7 @@ export default function Home() {
           <div className="browse-section">
             <div className="browse-header">
               <span className="browse-title">컬렉션으로 둘러보기</span>
-              <span className="browse-hint">마우스를 올리면 포함된 출처가 떠요</span>
+              <span className="browse-hint">누르면 포함된 출처가 보여요</span>
             </div>
             <div className="browse-cards browse-cards-collection">
               {COLLECTION_GROUPS.map((g) => {
@@ -1303,7 +1303,7 @@ export default function Home() {
               <div className="card-btns">
                 <button className="library-btn cta-btn" title="내 주변 도서관의 대출 가능 여부를 확인해요"
                   onClick={(e) => { e.stopPropagation(); handleCheckLibrary(book); }}>
-                  <Library size={13}/> 도서관에서 찾기
+                  <Library size={13}/> 도서관 찾기
                 </button>
                 <button className="library-btn lib-ghost activity-btn" title="이 책으로 할 수 있는 다중지능 독후활동을 봐요"
                   onClick={(e) => { e.stopPropagation(); openDetail(book, true); }}>

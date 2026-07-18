@@ -1486,3 +1486,33 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 /* 찜 전체 비우기 버튼 — 찜 목록 화면에서만 노출 */
 .fav-clear-pill { color: #B04A5A; border-color: #e8cdd2; }
 .fav-clear-pill:hover { background: #faf0f2; border-color: #B04A5A; }
+
+/* ── 모바일 라이트 스프린트 (2026-07-19) — 600px 이하만 적용, 데스크톱 불변 ── */
+@media (max-width: 600px) {
+  /* 홈 히어로 압축: 첫 화면에서 책이 빨리 보이게 */
+  .hero { padding-top: .9rem; padding-bottom: .2rem; }
+  .wordmark { font-size: 1.5rem; margin-bottom: .1rem; }
+  .app-tagline { font-size: .74rem; margin: .15rem 0 .35rem; }
+  .stat-pill { font-size: .68rem; padding: .32rem .7rem; }
+  .about-toggle { font-size: .72rem; padding: .35rem .85rem; }
+  .search-examples-label { display: none; }
+
+  /* 칩 줄바꿈 → 가로 스크롤 한 줄 (드롭다운 있는 sort-pills는 제외) */
+  .search-example-chips, .format-browse-row {
+    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding-bottom: 3px;
+  }
+  .search-example-chips::-webkit-scrollbar, .format-browse-row::-webkit-scrollbar { display: none; }
+  .search-example-chips > *, .format-browse-row > * { flex: none; white-space: nowrap; }
+
+  /* 카드 밀도: 훅은 상세에서 — 카드 높이 축소 */
+  .book-grid .hook-text { display: none; }
+
+  /* 상세: 표지+버튼을 컴팩트 가로 배치 → 제목·수상이 첫 화면에 들어옴 */
+  .detail-side {
+    display: grid !important; grid-template-columns: 104px minmax(0, 1fr);
+    gap: 8px 12px; align-items: stretch; padding: .8rem !important;
+  }
+  .detail-side .detail-cover { grid-row: 1 / 4; width: 104px !important; align-self: center; }
+  .detail-side .detail-side-btn { max-width: none; margin: 0; font-size: .76rem; padding: .5rem .3rem; }
+}
