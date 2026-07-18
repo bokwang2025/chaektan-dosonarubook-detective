@@ -1393,25 +1393,20 @@ export default function Home() {
                 />
                 <span className="zoom-hint">🔍 크게 보기</span>
               </div>
-              <button className="library-btn detail-side-btn" onClick={() => { setDetailAutoActivity(true); setTimeout(() => document.querySelector(".mi-activity-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80); }}>
-                <Pencil size={13} /> 독후활동 보기
-              </button>
-              <button className="library-btn library-btn-ghost detail-side-btn" onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
-                <Library size={13} /> 대출 가능 도서관 확인
-              </button>
-              <button
-                className={`library-btn detail-side-btn fav-side-btn ${favIds.includes(detailBook.id) ? "on" : ""}`}
-                onClick={() => toggleFav(detailBook.id)}
-                title="로그인 없이 이 브라우저에 저장돼요"
-              >
-                <Heart size={13} fill={favIds.includes(detailBook.id) ? "currentColor" : "none"} /> {favIds.includes(detailBook.id) ? "찜한 책 ✓" : "찜하기"}
-              </button>
+              {/* 모바일 전용: 표지 옆 책 정보 (데스크톱에서는 숨김) */}
+              <div className="detail-mobile-head">
+                <h2 className="modal-title">{detailBook.koreanTitle}</h2>
+                {detailBook.originalTitle && detailBook.originalTitle !== detailBook.koreanTitle && (
+                  <div className="detail-org">{detailBook.originalTitle}</div>
+                )}
+                <p className="modal-sub">{detailBook.author}</p>
+              </div>
               </div>
               <div className="detail-main">
               <div className="detail-info">
                 <h2 className="modal-title">{detailBook.koreanTitle}</h2>
                 {detailBook.originalTitle && detailBook.originalTitle !== detailBook.koreanTitle && (
-                  <div style={{ fontSize: ".82rem", color: "#64748b", marginBottom: ".4rem" }}>{detailBook.originalTitle}</div>
+                  <div className="detail-org" style={{ fontSize: ".82rem", color: "#64748b", marginBottom: ".4rem" }}>{detailBook.originalTitle}</div>
                 )}
                 <p className="modal-sub">{detailBook.author}</p>
                 {/* 수상·추천 배지 + awards 전체 펼침 */}
@@ -1530,6 +1525,21 @@ export default function Home() {
             )}
 
             {/* hook은 카드 목록에서만 노출 — 수정 2: 모달에서 제거 */}
+              </div>
+              <div className="detail-actions">
+                <button className="library-btn detail-side-btn" onClick={() => { setDetailBook(null); handleCheckLibrary(detailBook); }}>
+                  <Library size={13} /> 대출 가능 도서관
+                </button>
+                <button className="library-btn library-btn-ghost detail-side-btn" onClick={() => { setDetailAutoActivity(true); setTimeout(() => document.querySelector(".mi-activity-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80); }}>
+                  <Pencil size={13} /> 독후활동 보기
+                </button>
+                <button
+                  className={`library-btn detail-side-btn fav-side-btn ${favIds.includes(detailBook.id) ? "on" : ""}`}
+                  onClick={() => toggleFav(detailBook.id)}
+                  title="로그인 없이 이 브라우저에 저장돼요"
+                >
+                  <Heart size={13} fill={favIds.includes(detailBook.id) ? "currentColor" : "none"} /> <span className="fav-label">{favIds.includes(detailBook.id) ? "찜한 책 ✓" : "찜하기"}</span>
+                </button>
               </div>
             </div>
           </div>
