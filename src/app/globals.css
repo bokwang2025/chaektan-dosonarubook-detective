@@ -1607,3 +1607,16 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
   .detail-actions .library-btn-ghost { flex: 1; }
   .detail-actions .fav-side-btn { width: 42px; }
 }
+
+/* ── 모바일 4차 (2026-07-19): 상세 폭 정합 — 원인: 데스크톱 align-items:start 상속 ── */
+@media (max-width: 640px) {
+  .detail-body { align-items: stretch; }
+  .detail-side { width: 100%; box-sizing: border-box; }
+  .detail-main { width: 100%; }
+  /* 하단 바: 음수 마진 방식 폐기 → 콘텐츠 폭에 꽉 차는 둥근 바 */
+  .detail-actions { margin: .4rem 0 0; width: 100%; box-sizing: border-box;
+    border-radius: 12px; border: 1px solid #eee8da;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 14px rgba(60,50,30,.08); justify-content: center; }
+  .detail-modal { padding-bottom: .6rem !important; }
+}
