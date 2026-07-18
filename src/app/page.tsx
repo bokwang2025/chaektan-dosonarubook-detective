@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { getRelatedKeywords, tokenize, calcRelevance, rankByRelevance, rankForAi, countIntlAwards, recommendationCount, awardWeight, recommendationWeight, libraryWeight, calcWeight, getLibRank, INTL_AWARD_NAMES } from "../lib/smartSearch";
 import libraryCounts from "../data/library_counts.json";
+import loanCounts from "../data/loan_counts.json";
 import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
 import BookCover from "../components/BookCover";
@@ -459,6 +460,8 @@ export default function Home() {
 
     // H: 검색어 있을 때 항상 관련도×가중치 정렬 → sortModes는 2차 기준
     const counts = libraryCounts as Record<string, number>;
+    const loans = loanCounts as Record<string, number>;
+    const hasLoanData = Object.keys(loans).length > 100; // 수집 전엔 보유량 기준 유지
 
     const weightedScore = (book: Book): number => {
       const bookEntry = { id: book.id, title: book.koreanTitle || book.originalTitle, tags: book.tags, hook: book.hook || "", awards: book.awards, sources: book.sources, koreanIsbn: book.koreanIsbn, isbn: book.isbn };
@@ -484,8 +487,9 @@ export default function Home() {
             const yb = b.publishedYear ? parseInt(b.publishedYear) : 0;
             diff = yb - ya;
           } else if (mode === "library") {
-            const ca = counts[a.koreanIsbn] ?? (a.koreanIsbn ? 0 : -1);
-            const cb = counts[b.koreanIsbn] ?? (b.koreanIsbn ? 0 : -1);
+            const src = hasLoanData ? loans : counts; // 누적 대출 우선, 미수집 시 보유량
+            const ca = src[a.koreanIsbn] ?? (a.koreanIsbn ? 0 : -1);
+            const cb = src[b.koreanIsbn] ?? (b.koreanIsbn ? 0 : -1);
             diff = cb - ca;
           }
           if (diff !== 0) return diff;
@@ -1183,7 +1187,7 @@ export default function Home() {
               >추천순</button>
               {(
                 [
-                  { key: "library", label: "인기 대출",      title: "전국 공공도서관이 많이 소장한 책부터 — 도서관정보나루 보유 데이터 기준이에요" },
+                  { key: "library", label: "인기 대출",      title: "전국 공공도서관에서 많이 빌려 간 책부터 — 도서관정보나루 누적 대출 데이터 기준이에요 (2026.7 수집)" },
                   // [2026-07-05 임시 숨김] 최신 출간: publishedYear가 초판이 아닌 복간/재쇄 연도로 들어간 데이터가 있어 정렬이 부정확 → 데이터 정비 후 복원. 아래 한 줄 주석 해제하면 즉시 복원됨.
                   // { key: "recent",  label: "최신 출간",      title: "출판 연도가 최신인 책부터 보여드려요" },
 

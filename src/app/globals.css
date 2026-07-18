@@ -1566,3 +1566,44 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
   .detail-actions .fav-side-btn { flex: none; width: 48px; }
   .detail-actions .fav-label { display: none; }
 }
+
+/* ── 모바일 3차 (2026-07-19): viki 실기기 검수 반영 — 폭 제한, 데스크톱 불변 ── */
+@media (max-width: 600px) {
+  /* ① 세로 간격 압축 — 첫 화면에 책 목록 진입 */
+  .hero { padding-top: .7rem; }
+  .wordmark { font-size: 1.35rem; }
+  .app-tagline { margin: .1rem 0 .25rem; }
+  .stat-pill { margin-bottom: .3rem; }
+  .about-toggle { margin-bottom: 0; }
+  .search { margin-top: .4rem; }
+  .search-examples { margin: .3rem 0 .1rem; }
+  .browse-section { margin-top: .3rem; margin-bottom: .2rem; }
+  .browse-header { margin-bottom: .3rem; }
+  .browse-title { font-size: .82rem; }
+  .browse-hint { font-size: .62rem; }
+  .format-browse-row { margin-top: 2px; }
+  .grid-header { margin-top: .4rem; margin-bottom: .3rem; gap: .3rem; }
+  .grid-title { font-size: .9rem; }
+  .grid-subtitle, .grid-header p { font-size: .66rem; margin: 0; }
+
+  /* ② 연령 칩 학년 문구 제거 + 형태 칩이 살짝 보이게 */
+  .age-chip .age-chip-sub { display: none; }
+  .format-browse-chip { font-size: .74rem; padding: 6px 11px; }
+
+  /* ③ 카드 버튼: 폰트 축소 + 도서관 찾기 넓게 / 독후활동 좁게 (높이 동일) */
+  .card-btns button { font-size: .64rem; letter-spacing: -.03em; padding-left: 1px; padding-right: 1px; white-space: nowrap; }
+  .card-btns svg { width: 10px; height: 10px; }
+  .card-btns .cta-btn { flex: 1.35; }
+  .card-btns .activity-btn { flex: 0.65; }
+}
+
+@media (max-width: 640px) {
+  /* ④ 상세 하단 바: 모달 폭에 정확히 맞춤 + 버튼 축소로 한 줄 유지 */
+  .detail-modal { padding: 1rem 1rem 0 !important; overflow-x: hidden; }
+  .detail-actions { margin: .4rem -1rem 0; padding: 9px 1rem calc(9px + env(safe-area-inset-bottom, 0px)); }
+  .detail-actions .detail-side-btn { font-size: .74rem; padding: .58rem .15rem; white-space: nowrap; }
+  .detail-actions .detail-side-btn svg { width: 11px; height: 11px; }
+  .detail-actions .detail-side-btn:first-child { flex: 1.2; }
+  .detail-actions .library-btn-ghost { flex: 1; }
+  .detail-actions .fav-side-btn { width: 42px; }
+}
