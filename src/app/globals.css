@@ -1703,3 +1703,23 @@ body { word-break: keep-all; overflow-wrap: break-word; text-wrap: pretty; }
 
 /* 헤드라인 강조: 잉크와 명도차 확보 (실측상 #1E4D3B는 잉크와 구분 안 됨) */
 .hero-headline .hl-em { color: #2E6B4E; }
+
+/* ── 디자인 5차 (2026-07-19): 카드 레이어 정리 — 프레임을 '액자' 문법으로 ── */
+/* 프레임: 3:4 고정 + 카드 폭 꽉 참, 자체 그림자·보더 없음 */
+.card-cover-wrap {
+  aspect-ratio: 3 / 4; width: 100%;
+  background: #ECE7DB !important;
+  border-radius: 8px; border: none; box-shadow: none;
+  padding: 0 !important; position: relative; overflow: hidden;
+}
+/* 표지: 프레임 안쪽 12px에 contain 고정 — 판형이 달라도 여백이 균일 */
+.card-cover-wrap img, .card-cover-wrap .book-cover-img {
+  position: absolute; inset: 12px;
+  width: calc(100% - 24px) !important; height: calc(100% - 24px) !important;
+  object-fit: contain !important; margin: 0;
+}
+/* 그림자 단일화: ①표지 drop-shadow(기존) ②카드 박스 옅은 그림자 — 둘만 */
+.book-card { padding: 10px 10px 13px; box-shadow: 0 1px 3px rgba(28,43,38,.06); gap: .5rem; }
+.book-card .book-title, .book-card .book-meta-row, .book-card .hook-text, .book-card .card-btns, .book-card .cover-seal { margin-left: 3px; margin-right: 3px; }
+/* 하트: 프레임 기준 우상단 10px */
+.card-cover-wrap .fav-btn { top: 10px; right: 10px; }
