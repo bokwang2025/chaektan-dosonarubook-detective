@@ -1071,7 +1071,6 @@ export default function Home() {
                     onClick={() => setExpandedGroups(prev =>
                       prev.includes(g.key) ? prev.filter(k => k !== g.key) : [...prev, g.key]
                     )}
-                    data-tooltip={g.tip}
                   >
                     <span className={`browse-icon ${g.iconCls}`}>{g.hanja}</span>
                     <span className="browse-card-title">{g.title}</span>

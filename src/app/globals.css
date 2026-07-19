@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@700&family=Outfit:wght@600;700&display=swap');
-@import "tailwindcss";
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+@import "tailwindcss";
 /* v2 */
 
 /* ── 라이트 테마 변수 ─────────────────── */
@@ -1630,3 +1630,25 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 }
 .empty-sub { font-size: .82rem; color: #8a8272; margin-top: .2rem; }
 @media (max-width: 600px) { .hero-headline { display: none; } }
+
+/* ── 스몰 UI 패치 2차 (2026-07-19, 디자인 시안): 히어로 3단 위계·링크화·keep-all ── */
+/* 한국어 줄바꿈 교정 — 한 글자 떨어짐 방지, 긴 영문은 안전하게 개행 */
+body { word-break: keep-all; overflow-wrap: break-word; text-wrap: pretty; }
+
+/* 히어로 대·중·소: 헤드라인이 주인공, 로고 축소, 태그라인 옅게
+   — 601px 이상 한정 (모바일 압축 레이아웃의 자체 크기 규칙 보호, 회귀 방지) */
+@media (min-width: 601px) {
+  .wordmark { font-size: clamp(1.25rem, 2.8vw, 1.8rem); margin-bottom: .15rem; }
+  .hero-headline { font-size: clamp(1.7rem, 3.4vw, 2.25rem); margin: .35rem 0 .3rem; }
+  .app-tagline { font-size: .9rem; color: #8a958f; }
+}
+@media (max-width: 600px) { .app-tagline { color: #8a958f; } }
+
+/* "이 앱에 대해" — 조용한 텍스트 링크로 */
+.about-toggle {
+  background: none; border: none; box-shadow: none;
+  padding: .2rem .4rem; border-radius: 4px;
+  font-size: .8rem; font-weight: 600;
+  color: #8a958f; text-decoration: underline; text-underline-offset: 3px;
+}
+.about-toggle:hover { color: var(--accent2); background: none; box-shadow: none; transform: none; }
