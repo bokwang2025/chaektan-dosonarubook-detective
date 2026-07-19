@@ -1723,3 +1723,7 @@ body { word-break: keep-all; overflow-wrap: break-word; text-wrap: pretty; }
 .book-card .book-title, .book-card .book-meta-row, .book-card .hook-text, .book-card .card-btns, .book-card .cover-seal { margin-left: 3px; margin-right: 3px; }
 /* 하트: 프레임 기준 우상단 10px */
 .card-cover-wrap .fav-btn { top: 10px; right: 10px; }
+
+/* ── 디자인 5.1 (2026-07-19): 크림 프레임 가림 수정 ── */
+/* BookCover 내부 래퍼(.book-cover-wrap)의 밝은 배경이 프레임 크림색(#ECE7DB)을 덮던 문제 */
+.card-cover-wrap .book-cover-wrap { background: transparent !important; }
