@@ -1689,3 +1689,17 @@ body { word-break: keep-all; overflow-wrap: break-word; text-wrap: pretty; }
 
 /* 히어로 헤드라인 강조 스팬 (Hahmlet 800 적용과 세트, 2026-07-19) */
 .hero-headline .hl-em { color: #1E4D3B; }
+
+/* ── 디자인 4차 (2026-07-19): 표지 크림 프레임(A단계) + 헤드라인 강조색 상향 ── */
+/* 표지 프레임: 배경과 같은 계열 크림에 담아 판형 통일감 — 정돈됨의 핵심 */
+.card-cover-wrap {
+  background: #ECE7DB !important;
+  padding: 12px; border-radius: 8px;
+}
+.card-cover-wrap img, .card-cover-wrap .book-cover-img {
+  filter: drop-shadow(0 3px 8px rgba(28,43,38,.18));
+  border-radius: 3px;
+}
+
+/* 헤드라인 강조: 잉크와 명도차 확보 (실측상 #1E4D3B는 잉크와 구분 안 됨) */
+.hero-headline .hl-em { color: #2E6B4E; }
