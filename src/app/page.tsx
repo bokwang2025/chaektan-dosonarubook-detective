@@ -967,7 +967,7 @@ export default function Home() {
             >
               {aiLoading
                 ? <><Loader2 size={13} className="spin" /> 분석 중</>
-                : <><Sparkles size={13} /> AI 단서 찾기</>}
+                : <><Sparkles size={13} /> <span className="ai-label-full">AI 단서 찾기</span><span className="ai-label-short">단서 찾기</span></>}
             </button>
           </div>
 

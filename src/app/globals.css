@@ -1727,3 +1727,15 @@ body { word-break: keep-all; overflow-wrap: break-word; text-wrap: pretty; }
 /* ── 디자인 5.1 (2026-07-19): 크림 프레임 가림 수정 ── */
 /* BookCover 내부 래퍼(.book-cover-wrap)의 밝은 배경이 프레임 크림색(#ECE7DB)을 덮던 문제 */
 .card-cover-wrap .book-cover-wrap { background: transparent !important; }
+
+/* ── 마감 폴리시 (2026-07-19): 검색 버튼 딥그린 + 모바일 라벨 축소 ── */
+/* 제1 액션 버튼은 팔레트에서 가장 힘 있는 색으로 (디자인 토큰: 딥그린) — 실제 버튼 클래스는 .ai-inset-btn */
+.ai-inset-btn { background: #1E4D3B !important; color: #F4EFDF !important; }
+.ai-inset-btn:hover:not(:disabled) { background: #163B2D !important; }
+/* 모바일: 라벨 "단서 찾기"로 축소 — "AI"는 안내문이 받아줌, 검색창 잠식 해소 */
+.ai-label-short { display: none; }
+@media (max-width: 600px) {
+  .ai-label-full { display: none; }
+  .ai-label-short { display: inline; }
+  .ai-inset-btn { padding-left: 1rem; padding-right: 1rem; }
+}
