@@ -967,14 +967,14 @@ export default function Home() {
             >
               {aiLoading
                 ? <><Loader2 size={13} className="spin" /> 분석 중</>
-                : <><Sparkles size={13} /> AI 추천</>}
+                : <><Sparkles size={13} /> AI 단서 찾기</>}
             </button>
           </div>
 
           {/* 검색 예시 — 유형 라벨로 검색 범위 안내 */}
           {!query && (
             <div className="search-examples">
-              <span className="search-examples-label">상황·감정뿐 아니라 책 제목이나 작가 이름으로도 찾을 수 있어요</span>
+              <span className="search-examples-label">AI가 상황·감정·제목·작가에서 단서를 찾아드려요</span>
               <div className="search-example-chips">
                 <button className="example-chip" onClick={() => handleAiSearch("용기를 주는 책")}>
                   용기를 주는 책 <span className="example-type">상황</span>
