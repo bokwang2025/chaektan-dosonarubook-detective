@@ -897,6 +897,7 @@ export default function Home() {
       {/* 헤더 */}
       <section className="hero">
         <h1 className="wordmark">책탐정 도서나루</h1>
+        <p className="hero-headline">좋은 그림책은, 이미 검증되어 있습니다</p>
         <p className="app-tagline">수상·추천으로 고른 그림책, 가까운 도서관까지</p>
         <p className="stat-pill">검증된 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> · 국제 4대 상 + 국내 추천 9기관</p>
 
@@ -1148,12 +1149,12 @@ export default function Home() {
                   <span className="dl-menu-backdrop" onClick={() => setDlMenuOpen(false)} />
                   <span className="dl-menu">
                     <button onClick={() => { downloadList("current"); setDlMenuOpen(false); }}>AI 추천 결과 전체 ({books.length}권)</button>
-                    <button disabled={favIds.length === 0} onClick={() => { downloadList("favs"); setDlMenuOpen(false); }}>찜한 목록 ({favIds.length}권)</button>
+                    <button disabled={favIds.length === 0} onClick={() => { downloadList("favs"); setDlMenuOpen(false); }}>탐정 수첩 ({favIds.length}권)</button>
                   </span>
                 </>
               )}
             </span>
-            <button className="ai-banner-slim-close" onClick={openFavsView}><Heart size={11} /> 찜한 책{favIds.length > 0 ? ` ${favIds.length}` : ""}</button>
+            <button className="ai-banner-slim-close" onClick={openFavsView}><Heart size={11} /> 탐정 수첩{favIds.length > 0 ? ` ${favIds.length}` : ""}</button>
             <button className="ai-banner-slim-close" onClick={resetAi}><X size={11} /> 일반 검색</button>
           </div>
         )}
@@ -1215,9 +1216,9 @@ export default function Home() {
               <button
                 className={`sort-pill fav-pill ${showFavsOnly ? "on" : ""}`}
                 onClick={() => { if (showFavsOnly) closeFavsView(); else openFavsView(); }}
-                data-tooltip="하트로 찜해 둔 책만 모아 봐요 — 로그인 없이 이 브라우저에 저장됩니다"
+                data-tooltip="하트로 찜해 둔 책을 모은 나만의 탐정 수첩 — 로그인 없이 이 브라우저에 저장됩니다"
               >
-                <Heart size={12} fill={showFavsOnly ? "currentColor" : "none"} /> 찜한 책{favIds.length > 0 ? ` ${favIds.length}` : ""}
+                <Heart size={12} fill={showFavsOnly ? "currentColor" : "none"} /> 탐정 수첩{favIds.length > 0 ? ` ${favIds.length}` : ""}
               </button>
               {showFavsOnly && favIds.length > 0 && (
                 <button
@@ -1241,7 +1242,7 @@ export default function Home() {
                     <span className="dl-menu-backdrop" onClick={() => setDlMenuOpen(false)} />
                     <span className="dl-menu">
                       <button onClick={() => { downloadList("current"); setDlMenuOpen(false); }}>검색 결과 전체 ({books.length}권)</button>
-                      <button disabled={favIds.length === 0} onClick={() => { downloadList("favs"); setDlMenuOpen(false); }}>찜한 목록 ({favIds.length}권)</button>
+                      <button disabled={favIds.length === 0} onClick={() => { downloadList("favs"); setDlMenuOpen(false); }}>탐정 수첩 ({favIds.length}권)</button>
                     </span>
                   </>
                 )}
@@ -1321,8 +1322,8 @@ export default function Home() {
         {books.length === 0 && showFavsOnly && !aiMode ? (
           <div className="empty-state">
             <Heart size={36} style={{ color: "#B04A5A", opacity: .5 }} />
-            <p>아직 찜한 책이 없어요.</p>
-            <small>도서 카드의 하트를 누르면 여기에 모여요 — 로그인 없이 이 브라우저에 저장됩니다.</small>
+            <p>탐정 수첩이 아직 비어 있어요.</p>
+            <small>마음에 남는 책을 찜하면 여기에 기록돼요 — 로그인 없이 이 브라우저에 저장됩니다.</small>
           </div>
         ) : books.length === 0 && (
           <div className="empty-state">
