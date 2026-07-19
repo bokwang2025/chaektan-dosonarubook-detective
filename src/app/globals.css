@@ -1,11 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@700&family=Outfit:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Hahmlet:wght@800&family=Outfit:wght@600;700&display=swap');
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 @import "tailwindcss";
 /* v2 */
 
 /* ── 라이트 테마 변수 ─────────────────── */
 :root {
-  --bg:        #f8f7f4;
+  --bg:        #F7F4EC; /* 웜 크림 — 디자인 시안 통일 (2026-07-19) */
   --surface:   #ffffff;
   --surface2:  #f8fafc;
   --glass:     rgba(255,255,255,0.92);
@@ -1624,8 +1624,8 @@ body { font-family: "Pretendard Variable", Pretendard, var(--font-geist-sans), -
 
 /* ── 히어로 헤드라인 (클로드 디자인 시안 채택, 2026-07-19) ── */
 .hero-headline {
-  font-family: 'Noto Serif KR', 'Pretendard', serif;
-  font-size: 1.72rem; font-weight: 700; line-height: 1.3;
+  font-family: 'Hahmlet', 'Pretendard', serif;
+  font-size: 1.72rem; font-weight: 800; line-height: 1.32;
   color: #16241f; margin: .55rem 0 .2rem; letter-spacing: -.02em;
 }
 .empty-sub { font-size: .82rem; color: #8a8272; margin-top: .2rem; }
@@ -1652,3 +1652,40 @@ body { word-break: keep-all; overflow-wrap: break-word; text-wrap: pretty; }
   color: #8a958f; text-decoration: underline; text-underline-offset: 3px;
 }
 .about-toggle:hover { color: var(--accent2); background: none; box-shadow: none; transform: none; }
+
+/* ── 디자인 시안 적용 3차 (2026-07-19): 컬렉션 컬러 블록·카드 색 띠 제거·인장 단순화 ── */
+/* 카드 왼쪽 색 띠 제거 — 배지가 이미 출처를 말하므로 (viki 확정: 깔끔 우선) */
+.card-band { display: none !important; }
+
+/* 인장 배지 단순화: 국제수상만 골드, 국내 추천은 중립 크림 (v11 규칙 회귀) */
+.cover-seal.seal-lib, .cover-seal.seal-edu { background: #F3EFE3; color: #6b6252; }
+
+/* 컬렉션 3장 = 딥 컬러 블록 (딥그린/네이비/샌드, 글자 반전, 상단 보더 제거) */
+.browse-cards-collection .browse-card:nth-child(1),
+.browse-cards-collection .browse-card:nth-child(2),
+.browse-cards-collection .browse-card:nth-child(3) { border-top: none; border: none; }
+
+.browse-cards-collection .browse-card:nth-child(1) { background: #1E4D3B; }
+.browse-cards-collection .browse-card:nth-child(2) { background: #22354F; }
+.browse-cards-collection .browse-card:nth-child(3) { background: #EFE8D5; border: 1px solid rgba(61,52,38,.08); }
+
+.browse-cards-collection .browse-card:nth-child(1) .browse-card-title,
+.browse-cards-collection .browse-card:nth-child(2) .browse-card-title { color: #fff; }
+.browse-cards-collection .browse-card:nth-child(1) .browse-card-desc,
+.browse-cards-collection .browse-card:nth-child(2) .browse-card-desc { color: rgba(255,255,255,.72); }
+.browse-cards-collection .browse-card:nth-child(3) .browse-card-title { color: #3a3428; }
+.browse-cards-collection .browse-card:nth-child(3) .browse-card-desc { color: #8a7f68; }
+
+/* 한자 아이콘: 배경 칩 제거하고 골드 글자로 */
+.browse-cards-collection .browse-icon { background: none; font-size: 1.5rem; width: auto; height: auto; }
+.browse-cards-collection .browse-card:nth-child(1) .browse-icon { color: #E8C56A; }
+.browse-cards-collection .browse-card:nth-child(2) .browse-icon { color: #9DB8E8; }
+.browse-cards-collection .browse-card:nth-child(3) .browse-icon { color: #A8842C; }
+
+/* 호버·선택 상태: 딥 블록에 맞게 */
+.browse-cards-collection .browse-card:hover { border-color: transparent; box-shadow: 0 6px 18px rgba(30,40,35,.18); transform: translateY(-2px); }
+.browse-cards-collection .browse-card.on { outline: 2px solid #B8860B; outline-offset: 2px; }
+
+
+/* 히어로 헤드라인 강조 스팬 (Hahmlet 800 적용과 세트, 2026-07-19) */
+.hero-headline .hl-em { color: #1E4D3B; }

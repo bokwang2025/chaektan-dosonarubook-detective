@@ -897,7 +897,7 @@ export default function Home() {
       {/* 헤더 */}
       <section className="hero">
         <h1 className="wordmark">책탐정 도서나루</h1>
-        <p className="hero-headline">좋은 그림책은, 이미 검증되어 있습니다</p>
+        <p className="hero-headline">좋은 그림책은,<br /><span className="hl-em">이미 검증</span>되어 있습니다</p>
         <p className="app-tagline">수상·추천으로 고른 그림책, 가까운 도서관까지</p>
         <p className="stat-pill">검증된 그림책 <strong>{booksWithIsbn.length.toLocaleString()}권</strong> · 국제 4대 상 + 국내 추천 9기관</p>
 
