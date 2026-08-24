@@ -23,6 +23,18 @@ function extractFirstJsonObject(s: string): string | null {
   return null;
 }
 
+// 콜드스타트 대비 함수 실행 시간 여유 (1회 재시도 포함) — 타 라우트와 동일 수준
+export const maxDuration = 25;
+
+/**
+ * 워밍업(GET): 서버리스 함수 부팅 + Anthropic SDK 모듈 프리로드만 수행.
+ * Claude API는 호출하지 않으므로 비용 0. 홈 로드 시 클라이언트가 1회 호출해 함수를 미리 깨운다.
+ */
+export async function GET() {
+  try { await import("@anthropic-ai/sdk"); } catch { /* noop */ }
+  return NextResponse.json({ ok: true, warmed: true });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { query, books: rawBooks } = await req.json();
@@ -39,7 +51,7 @@ export async function POST(req: NextRequest) {
       let rawText = "";
       try {
         const Anthropic = (await import("@anthropic-ai/sdk")).default;
-        const client = new Anthropic({ apiKey });
+        const client = new Anthropic({ apiKey, maxRetries: 0 }); // 재시도는 아래에서 직접 1회 제어
 
         // 가중치 반영 관련도 순 사전 정렬 → 상위 300권만 Claude에 전달
         const ranked = rankByRelevance(query, books);
@@ -74,25 +86,41 @@ ${JSON.stringify(booksForClaude, null, 0)}
 응답은 반드시 아래 JSON 형식만 반환하세요 (설명 없이):
 {"results": [{"id": "책id", "reason": "이 책을 추천하는 이유 1-2문장 (한국어)"}]}`;
 
-        const message = await client.messages.create({
-          model: "claude-haiku-4-5",
-          max_tokens: 1500,
-          messages: [{ role: "user", content: prompt }],
-        });
+        // 콜드스타트/일시 오류 대비: 실패 시 즉시 폴백하지 않고 1회 자동 재시도.
+        // 각 시도에 짧은 타임아웃(10s)을 둬 재시도 여유를 확보(2회 × 10s < maxDuration 25s).
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const message = await client.messages.create(
+              {
+                model: "claude-haiku-4-5",
+                max_tokens: 1500,
+                messages: [{ role: "user", content: prompt }],
+              },
+              { timeout: 10000 }
+            );
+            rawText = message.content[0].type === "text" ? message.content[0].text : "";
+            // 첫 {...} JSON 객체만 추출 → 파싱 (마크다운 펜스·앞뒤 잡담에 견고)
+            const jsonStr = extractFirstJsonObject(rawText);
+            if (!jsonStr) throw new Error("응답에서 JSON 객체를 찾지 못함");
+            const parsed = JSON.parse(jsonStr);
+            return NextResponse.json({ ...parsed, engine: "claude" });
+          } catch (attemptErr) {
+            const reason = attemptErr instanceof Error ? attemptErr.message : String(attemptErr);
+            if (attempt === 0) {
+              console.warn(`[ai-search] 1차 시도 실패 → 1회 재시도: ${reason}`);
+              continue; // 폴백 전 1회 재시도
+            }
+            // 재시도도 실패 → 아래 smart 폴백으로. 진단 로그(검색어 전문·개인정보 미기록)
+            const head = rawText.slice(0, 120).replace(/\s+/g, " ").trim();
+            console.warn(`[ai-search] 재시도도 실패 → smart 폴백: ${reason}`);
+            if (head) console.warn(`[ai-search] 응답 앞부분(120자): ${head}`);
+          }
+        }
 
-        rawText = message.content[0].type === "text" ? message.content[0].text : "";
-        // 첫 {...} JSON 객체만 추출 → 파싱 (마크다운 펜스·앞뒤 잡담에 견고)
-        const jsonStr = extractFirstJsonObject(rawText);
-        if (!jsonStr) throw new Error("응답에서 JSON 객체를 찾지 못함");
-        const parsed = JSON.parse(jsonStr);
-        return NextResponse.json({ ...parsed, engine: "claude" });
-
-      } catch (claudeErr) {
-        // 실패 진단 로그 — 검색어 전문·개인정보는 남기지 않고, 사유 + 응답 앞부분만 기록
-        const reason = claudeErr instanceof Error ? claudeErr.message : String(claudeErr);
-        const head = rawText.slice(0, 120).replace(/\s+/g, " ").trim();
-        console.warn(`[ai-search] Claude 파싱/호출 실패 → smart 폴백: ${reason}`);
-        if (head) console.warn(`[ai-search] 응답 앞부분(120자): ${head}`);
+      } catch (setupErr) {
+        // 초기화(SDK 임포트·클라이언트·프롬프트 구성) 실패 → smart 폴백
+        const reason = setupErr instanceof Error ? setupErr.message : String(setupErr);
+        console.warn(`[ai-search] Claude 초기화 실패 → smart 폴백: ${reason}`);
       }
     }
 

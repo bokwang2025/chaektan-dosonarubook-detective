@@ -279,6 +279,9 @@ export default function Home() {
   const [dlMenuOpen,    setDlMenuOpen]    = useState(false); // 목록 저장 드롭다운
   useEffect(() => {
     try { const s = localStorage.getItem("dosunaru_favs"); if (s) setFavIds(JSON.parse(s)); } catch { /* noop */ }
+    // 콜드스타트 완화: 홈 로드 시 AI 검색 라우트를 1회 예열(Claude 미호출, 비용 0).
+    // 사용자가 검색어를 입력하는 사이에 함수가 깨어 있게 됨.
+    fetch("/api/ai-search?warmup=1").catch(() => { /* noop */ });
   }, []);
   const toggleFav = (id: string) => {
     setFavIds(prev => {
