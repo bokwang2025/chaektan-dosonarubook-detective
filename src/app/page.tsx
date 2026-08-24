@@ -314,6 +314,10 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 0건 안전망: filterBooks가 방금 계산한 (검색어, 결과수) — 무공백 문장 구제용
+  const settledRef = useRef<{ q: string; count: number }>({ q: "", count: -1 });
+  // 같은 검색어로 AI 자동 재시도를 1회만 하도록 기록
+  const autoAiRef = useRef<string>("");
 
   const isPreciseQuery = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -375,6 +379,7 @@ export default function Home() {
 
     // 아무 필터·검색어도 없으면 가중치 정렬 전체 목록 (더보기로 확장)
     if (!hasFilter) {
+      settledRef.current = { q: "", count: INITIAL_BOOKS.length };
       setResultCount(INITIAL_BOOKS.length);
       setBooks(showAll ? INITIAL_BOOKS : INITIAL_BOOKS.slice(0, 60));
       return;
@@ -505,6 +510,7 @@ export default function Home() {
       });
     }
 
+    settledRef.current = { q: query.trim(), count: filtered.length };
     setResultCount(filtered.length);
     setBooks(showAll ? filtered : filtered.slice(0, 60));
   }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, orTags, andTags, sortModes, showFavsOnly, favIds]); // showAll 포함 — 기본 화면 더보기 지원
@@ -601,6 +607,21 @@ export default function Home() {
       setAiLoading(false);
     }
   };
+
+  // 0건 안전망: 키워드 검색이 0건이고 검색어가 한글 포함 6자 이상(숫자 허용)이면
+  // 같은 검색어를 AI 의미분석 라우트로 1회 자동 재시도 (무공백 문장 구제).
+  // 짧은 오타·제목/작가 검색은 재시도하지 않음. settledRef로 현재 검색어의 확정 결과만 대상.
+  useEffect(() => {
+    const q = query.trim();
+    if (aiMode || aiLoading || !q) return;
+    if (settledRef.current.q !== q || settledRef.current.count !== 0) return;
+    const qNorm = q.replace(/[^0-9가-힣]/g, "");
+    if (!/[가-힣]/.test(q) || qNorm.length < 6) return;
+    if (autoAiRef.current === q) return;
+    autoAiRef.current = q;
+    handleAiSearch(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultCount, query, aiMode, aiLoading]);
 
   const addOrTag = (tag: string) => {
     setOrTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
