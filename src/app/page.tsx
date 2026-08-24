@@ -581,9 +581,30 @@ export default function Home() {
         // Claude가 의미로 고를 수 있도록 다양성 있는 넓은 풀을 "컴팩트 필드"(제목·작가·연령·태그)로
         // 전달 — hook/summary는 생략해 토큰 비용을 억제.
         const byWeight = [...localPool].sort((a, b) => calcWeight(b) - calcWeight(a));
+        // ⓪ 주제 부분문자열 리콜: 무공백 쿼리로도 관련 책을 찾는다.
+        //   태그·제목의 2글자+ 단어가 검색어(정규화)에 부분문자열로 들어있으면 주제 매칭.
+        //   (한 글자 태그는 오매치 위험으로 제외 — 예: '강'이 '학교가기싫은8살'엔 없지만 광범위 매칭 방지)
+        const qNorm = q.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
+        const topicScore = (b: Book): number => {
+          let s = 0;
+          for (const t of b.tags || []) {
+            const tn = t.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
+            if (tn.length >= 2 && qNorm.includes(tn)) s += 2; // 태그 매칭
+          }
+          for (const w of (b.koreanTitle || b.originalTitle || "").split(/[\s·,.!?~]+/)) {
+            const wn = w.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
+            if (wn.length >= 2 && qNorm.includes(wn)) s += 1; // 제목 주요 단어 매칭
+          }
+          return s;
+        };
         const picked = new Map<string, Book>();
-        for (const b of byWeight.slice(0, 120)) picked.set(b.id, b); // ① 가중치 상위
-        for (const ag of ["미취학", "초등저학년", "초등고학년"]) {     // ② 연령대 층화 샘플(다양성)
+        // ① 주제 매칭 책 우선 (매칭 점수 desc, 동점은 가중치순 — byWeight 안정 정렬 유지)
+        [...byWeight].map((b) => ({ b, ts: topicScore(b) }))
+          .filter((x) => x.ts > 0)
+          .sort((a, c) => c.ts - a.ts)
+          .forEach(({ b }) => { if (picked.size < 180) picked.set(b.id, b); });
+        for (const b of byWeight.slice(0, 120)) { if (picked.size >= 180) break; picked.set(b.id, b); } // ② 가중치 상위로 채움
+        for (const ag of ["미취학", "초등저학년", "초등고학년"]) {     // ③ 남는 자리를 연령대 층화 샘플(다양성)
           const inAge = byWeight.filter((b) => (b.ageGroup || "") === ag);
           const step = Math.max(1, Math.floor(inAge.length / 24));
           for (let i = 0; i < inAge.length && picked.size < 180; i += step) picked.set(inAge[i].id, inAge[i]);
