@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { smartSearch, rankByRelevance, calcWeight, BookEntry } from "@/lib/smartSearch";
 
+/**
+ * 응답에서 첫 번째 균형 잡힌 {...} JSON 객체만 추출.
+ * 마크다운 펜스·앞뒤 잡담(모델이 JSON 앞뒤에 붙이는 설명)을 제거해 파싱 안정성을 높인다.
+ * 문자열 리터럴 내부의 중괄호·이스케이프를 구분한다.
+ */
+function extractFirstJsonObject(s: string): string | null {
+  const start = s.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+    } else if (ch === '"') inStr = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth === 0) return s.slice(start, i + 1); }
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { query, books: rawBooks } = await req.json();
@@ -14,6 +36,7 @@ export async function POST(req: NextRequest) {
     // ── 1. Claude API 시도 ─────────────────────────────
     const apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
     if (apiKey && apiKey !== "여기에_Claude_API_키_입력") {
+      let rawText = "";
       try {
         const Anthropic = (await import("@anthropic-ai/sdk")).default;
         const client = new Anthropic({ apiKey });
@@ -57,13 +80,19 @@ ${JSON.stringify(booksForClaude, null, 0)}
           messages: [{ role: "user", content: prompt }],
         });
 
-        const text = message.content[0].type === "text" ? message.content[0].text : "";
-        const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-        const parsed = JSON.parse(cleaned);
+        rawText = message.content[0].type === "text" ? message.content[0].text : "";
+        // 첫 {...} JSON 객체만 추출 → 파싱 (마크다운 펜스·앞뒤 잡담에 견고)
+        const jsonStr = extractFirstJsonObject(rawText);
+        if (!jsonStr) throw new Error("응답에서 JSON 객체를 찾지 못함");
+        const parsed = JSON.parse(jsonStr);
         return NextResponse.json({ ...parsed, engine: "claude" });
 
       } catch (claudeErr) {
-        console.warn("Claude API 실패, 스마트 검색으로 전환:", claudeErr);
+        // 실패 진단 로그 — 검색어 전문·개인정보는 남기지 않고, 사유 + 응답 앞부분만 기록
+        const reason = claudeErr instanceof Error ? claudeErr.message : String(claudeErr);
+        const head = rawText.slice(0, 120).replace(/\s+/g, " ").trim();
+        console.warn(`[ai-search] Claude 파싱/호출 실패 → smart 폴백: ${reason}`);
+        if (head) console.warn(`[ai-search] 응답 앞부분(120자): ${head}`);
       }
     }
 

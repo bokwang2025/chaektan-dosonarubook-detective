@@ -372,6 +372,13 @@ export default function Home() {
     booksWithIsbn.some((b) => b.ageGroup === a)
   );
 
+  // 무공백 긴 한글(6자+) 검색어 — 0건 화면에서 띄어쓰기 힌트 노출용 (자동 변환은 하지 않음)
+  const showSpacingHint = (() => {
+    const q = query.trim();
+    if (!q || /\s/.test(q)) return false;
+    return /[가-힣]/.test(q) && q.replace(/[^0-9가-힣]/g, "").length >= 6;
+  })();
+
   // ── 일반 필터 ──────────────────────────────
   const filterBooks = useCallback(() => {
     if (aiMode) return;
@@ -1397,6 +1404,9 @@ export default function Home() {
                     필터 모두 해제하고 다시 검색
                   </button>
                 )}
+                {showSpacingHint && (
+                  <small className="empty-space-hint">띄어쓰기를 넣으면 더 잘 찾아요. 예: &ldquo;학교 가기 싫은 8살&rdquo;</small>
+                )}
                 <div className="empty-ai-suggestions">
                   <span>이렇게 바꿔보세요 →</span>
                   {["전학 가서 외로운 아이에게", "용기가 필요한 순간에", "동생이 생긴 아이에게"].map((ex) => (
@@ -1409,7 +1419,11 @@ export default function Home() {
               <>
                 <BookOpen size={38} />
                 <p>검색 결과가 없습니다.</p>
-                <small>제목·작가 이름을 확인하거나, <strong>AI 상황 추천</strong> 탭을 사용해 보세요.</small>
+                {showSpacingHint ? (
+                  <small className="empty-space-hint">띄어쓰기를 넣으면 더 잘 찾아요. 예: &ldquo;학교 가기 싫은 8살&rdquo;</small>
+                ) : (
+                  <small>제목·작가 이름을 확인하거나, <strong>AI 상황 추천</strong> 탭을 사용해 보세요.</small>
+                )}
               </>
             )}
           </div>
