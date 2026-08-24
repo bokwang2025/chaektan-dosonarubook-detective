@@ -575,6 +575,8 @@ export default function Home() {
       if (preBooks.length > 0) setBooks(preBooks);
 
       let payload: Array<Record<string, unknown>>;
+      let claudeQuery = q;              // Claude에 보낼 쿼리(보강 경로는 매칭 키워드 덧붙임)
+      let augmentTopical: Book[] = [];  // 보강 경로에서 부분문자열로 찾은 주제 매칭 책(폴백용)
       if (opts?.augment) {
         // ── 무공백 문장 구제 경로 전용 ──────────────────────────
         // 키워드 풀이 비어(토큰화 실패) 관련 후보를 못 만들 때만 발동.
@@ -585,11 +587,12 @@ export default function Home() {
         //   태그·제목의 2글자+ 단어가 검색어(정규화)에 부분문자열로 들어있으면 주제 매칭.
         //   (한 글자 태그는 오매치 위험으로 제외 — 예: '강'이 '학교가기싫은8살'엔 없지만 광범위 매칭 방지)
         const qNorm = q.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
+        const kwCount = new Map<string, number>(); // 매칭된 태그 키워드 빈도(쿼리 보강용)
         const topicScore = (b: Book): number => {
           let s = 0;
           for (const t of b.tags || []) {
             const tn = t.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
-            if (tn.length >= 2 && qNorm.includes(tn)) s += 2; // 태그 매칭
+            if (tn.length >= 2 && qNorm.includes(tn)) { s += 2; kwCount.set(t, (kwCount.get(t) || 0) + 1); } // 태그 매칭
           }
           for (const w of (b.koreanTitle || b.originalTitle || "").split(/[\s·,.!?~]+/)) {
             const wn = w.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
@@ -597,12 +600,17 @@ export default function Home() {
           }
           return s;
         };
-        const picked = new Map<string, Book>();
-        // ① 주제 매칭 책 우선 (매칭 점수 desc, 동점은 가중치순 — byWeight 안정 정렬 유지)
-        [...byWeight].map((b) => ({ b, ts: topicScore(b) }))
+        // 주제 매칭 책(점수 desc, 동점은 가중치순 — byWeight 안정 정렬 유지)
+        augmentTopical = [...byWeight].map((b) => ({ b, ts: topicScore(b) }))
           .filter((x) => x.ts > 0)
           .sort((a, c) => c.ts - a.ts)
-          .forEach(({ b }) => { if (picked.size < 180) picked.set(b.id, b); });
+          .map((x) => x.b);
+        // 매칭 상위 키워드 2~3개를 Claude 쿼리에 덧붙여 무공백 분절 실패를 보완
+        const topKeywords = [...kwCount.entries()].sort((a, c) => c[1] - a[1]).slice(0, 3).map((e) => e[0]);
+        if (topKeywords.length) claudeQuery = `${q} (관련 주제: ${topKeywords.join(", ")})`;
+        const picked = new Map<string, Book>();
+        // ① 주제 매칭 책 우선
+        for (const b of augmentTopical) { if (picked.size >= 180) break; picked.set(b.id, b); }
         for (const b of byWeight.slice(0, 120)) { if (picked.size >= 180) break; picked.set(b.id, b); } // ② 가중치 상위로 채움
         for (const ag of ["미취학", "초등저학년", "초등고학년"]) {     // ③ 남는 자리를 연령대 층화 샘플(다양성)
           const inAge = byWeight.filter((b) => (b.ageGroup || "") === ag);
@@ -650,11 +658,10 @@ export default function Home() {
       const res = await fetch("/api/ai-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, books: payload }),
+        body: JSON.stringify({ query: claudeQuery, books: payload }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      setAiEngine(data.engine || "smart");
 
       const aiBooks: Book[] = (data.results as { id: string; reason: string }[])
         .map((r): Book | null => {
@@ -663,12 +670,20 @@ export default function Home() {
         })
         .filter((b): b is Book => b !== null);
 
-      // AI 결과가 키워드 후보를 덮어써 화면이 비는 문제 방지:
-      // AI가 고른 책(추천 사유 有)을 앞에 두고, 키워드로 찾은 관련 도서를 뒤에 이어 붙임.
-      // → "공룡" 같은 구체어 검색에서 AI가 적게/못 골라도 관련 책이 사라지지 않음.
-      const aiIdSet = new Set(aiBooks.map((b) => b.id));
-      const merged = [...aiBooks, ...preBooks.filter((b) => !aiIdSet.has(b.id))];
-      setBooks(merged.length > 0 ? merged : preBooks);
+      // 보강 경로 폴백: Claude가 아무것도 못 골랐는데(무공백 분절 실패 등) 부분문자열로 찾은
+      // 주제 매칭 책이 있으면, 그 책들을 '스마트 검색 결과'로 표시(Claude 미경유임을 배너로 구분).
+      // → 주제 책을 찾아놓고 빈 화면을 보여주는 일이 없어짐.
+      if (opts?.augment && aiBooks.length === 0 && augmentTopical.length > 0) {
+        setAiEngine("smart");
+        setBooks(augmentTopical.slice(0, 60));
+      } else {
+        setAiEngine(data.engine || "smart");
+        // AI 결과가 키워드 후보를 덮어써 화면이 비는 문제 방지:
+        // AI가 고른 책(추천 사유 有)을 앞에 두고, 키워드로 찾은 관련 도서를 뒤에 이어 붙임.
+        const aiIdSet = new Set(aiBooks.map((b) => b.id));
+        const merged = [...aiBooks, ...preBooks.filter((b) => !aiIdSet.has(b.id))];
+        setBooks(merged.length > 0 ? merged : preBooks);
+      }
     } catch {
       setAiError("AI 검색에 실패했습니다. 일반 검색으로 대체합니다.");
       setAiMode(false); filterBooks();
