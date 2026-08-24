@@ -123,6 +123,6 @@ export async function GET(req: NextRequest) {
   if (!result) return new NextResponse(null, { status: 404 });
 
   return new NextResponse(result.buf, {
-    headers: { "Content-Type": result.ct, ...CACHE_HEADERS },
+    headers: { "Content-Type": result.ct, "Access-Control-Allow-Origin": "*", ...CACHE_HEADERS },
   });
 }
