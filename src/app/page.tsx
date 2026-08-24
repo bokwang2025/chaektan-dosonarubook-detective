@@ -314,10 +314,11 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 0건 안전망: filterBooks가 방금 계산한 (검색어, 결과수) — 무공백 문장 구제용
-  const settledRef = useRef<{ q: string; count: number }>({ q: "", count: -1 });
-  // 같은 검색어로 AI 자동 재시도를 1회만 하도록 기록
+  // 0건 안전망: 같은 검색어로 AI 자동 재시도를 1회만 하도록 기록 (무공백 문장 구제)
   const autoAiRef = useRef<string>("");
+  // filterBooks(먼저 정의)가 나중에 정의되는 handleAiSearch를 호출할 수 있도록 ref로 우회
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleAiSearchRef = useRef<(q: string, f?: any, o?: { augment?: boolean }) => void>(() => {});
 
   const isPreciseQuery = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -379,7 +380,7 @@ export default function Home() {
 
     // 아무 필터·검색어도 없으면 가중치 정렬 전체 목록 (더보기로 확장)
     if (!hasFilter) {
-      settledRef.current = { q: "", count: INITIAL_BOOKS.length };
+      autoAiRef.current = ""; // 검색 초기화 시 재시도 가드 해제
       setResultCount(INITIAL_BOOKS.length);
       setBooks(showAll ? INITIAL_BOOKS : INITIAL_BOOKS.slice(0, 60));
       return;
@@ -510,9 +511,21 @@ export default function Home() {
       });
     }
 
-    settledRef.current = { q: query.trim(), count: filtered.length };
     setResultCount(filtered.length);
     setBooks(showAll ? filtered : filtered.slice(0, 60));
+
+    // ── 0건 안전망 ──────────────────────────────────────────
+    // 키워드 검색이 0건이고 검색어가 한글 포함 6자 이상(숫자 허용)이면
+    // 같은 검색어를 AI 의미분석 라우트로 1회 자동 재시도(보강 풀). 무공백 문장 구제.
+    // 짧은 오타·제목/작가 검색은 재시도하지 않음. (aiMode면 상단에서 이미 return)
+    if (filtered.length === 0) {
+      const q2 = query.trim();
+      const qNorm = q2.replace(/[^0-9가-힣]/g, "");
+      if (/[가-힣]/.test(q2) && qNorm.length >= 6 && autoAiRef.current !== q2) {
+        autoAiRef.current = q2;
+        handleAiSearchRef.current(q2, undefined, { augment: true }); // 보강 풀은 이 재시도 경로에서만
+      }
+    }
   }, [query, selectedAges, selectedSources, showKoreanOnly, showActivityOnly, aiMode, showAll, orTags, andTags, sortModes, showFavsOnly, favIds]); // showAll 포함 — 기본 화면 더보기 지원
 
   useEffect(() => {
@@ -523,7 +536,8 @@ export default function Home() {
   // ── AI 검색 ────────────────────────────────
   const handleAiSearch = async (
     overrideQuery?: string,
-    overrideFilters?: { koreanOnly?: boolean; ages?: string[]; sources?: string[] }
+    overrideFilters?: { koreanOnly?: boolean; ages?: string[]; sources?: string[] },
+    opts?: { augment?: boolean }
   ) => {
     const q = overrideQuery ?? query;
     if (!q.trim()) return;
@@ -553,30 +567,57 @@ export default function Home() {
       const preBooks  = preRanked.map(r => allBooks.find(b => b.id === r.id)).filter(Boolean) as Book[];
       if (preBooks.length > 0) setBooks(preBooks);
 
-      // AI 후보 풀: 줄거리까지 본 넓은 리콜로 최소 80권 확보
-      const aiRanked = rankForAi(q, localEntries);
-      // 부족하면 가중치 상위 책으로 패딩 (AI가 굶지 않도록)
-      const aiIds = new Set(aiRanked.map(b => b.id));
-      const padding = localEntries
-        .filter(b => !aiIds.has(b.id))
-        .sort((a, b) => calcWeight(b) - calcWeight(a));
-      const aiPool = [...aiRanked, ...padding].slice(0, 120);
-
-      const payload = aiPool.map((b) => {
-        const full = allBooks.find(ab => ab.id === b.id);
-        return {
+      let payload: Array<Record<string, unknown>>;
+      if (opts?.augment) {
+        // ── 무공백 문장 구제 경로 전용 ──────────────────────────
+        // 키워드 풀이 비어(토큰화 실패) 관련 후보를 못 만들 때만 발동.
+        // Claude가 의미로 고를 수 있도록 다양성 있는 넓은 풀을 "컴팩트 필드"(제목·작가·연령·태그)로
+        // 전달 — hook/summary는 생략해 토큰 비용을 억제.
+        const byWeight = [...localPool].sort((a, b) => calcWeight(b) - calcWeight(a));
+        const picked = new Map<string, Book>();
+        for (const b of byWeight.slice(0, 120)) picked.set(b.id, b); // ① 가중치 상위
+        for (const ag of ["미취학", "초등저학년", "초등고학년"]) {     // ② 연령대 층화 샘플(다양성)
+          const inAge = byWeight.filter((b) => (b.ageGroup || "") === ag);
+          const step = Math.max(1, Math.floor(inAge.length / 24));
+          for (let i = 0; i < inAge.length && picked.size < 180; i += step) picked.set(inAge[i].id, inAge[i]);
+        }
+        payload = [...picked.values()].slice(0, 180).map((b) => ({
           id: b.id,
-          title: b.title,
-          tags: b.tags, hook: b.hook,
-          summary: (b.summary || "").slice(0, 100),
-          age: full?.targetAge || "",
-          source: b.source,
+          title: b.koreanTitle || b.originalTitle,
+          author: b.author,
+          age: b.targetAge || b.ageGroup || "",
+          tags: b.tags,
           awardCount: b.awardCount ?? 1,
-          sources:    b.sources ?? [b.source ?? ""],
-          isbn:       b.isbn || "",
+          sources: b.sources ?? [b.source ?? ""],
+          isbn: b.isbn || "",
           koreanIsbn: b.koreanIsbn || "",
-        };
-      });
+        }));
+      } else {
+        // AI 후보 풀: 줄거리까지 본 넓은 리콜로 최소 80권 확보
+        const aiRanked = rankForAi(q, localEntries);
+        // 부족하면 가중치 상위 책으로 패딩 (AI가 굶지 않도록)
+        const aiIds = new Set(aiRanked.map(b => b.id));
+        const padding = localEntries
+          .filter(b => !aiIds.has(b.id))
+          .sort((a, b) => calcWeight(b) - calcWeight(a));
+        const aiPool = [...aiRanked, ...padding].slice(0, 120);
+
+        payload = aiPool.map((b) => {
+          const full = allBooks.find(ab => ab.id === b.id);
+          return {
+            id: b.id,
+            title: b.title,
+            tags: b.tags, hook: b.hook,
+            summary: (b.summary || "").slice(0, 100),
+            age: full?.targetAge || "",
+            source: b.source,
+            awardCount: b.awardCount ?? 1,
+            sources:    b.sources ?? [b.source ?? ""],
+            isbn:       b.isbn || "",
+            koreanIsbn: b.koreanIsbn || "",
+          };
+        });
+      }
 
       const res = await fetch("/api/ai-search", {
         method: "POST",
@@ -608,20 +649,8 @@ export default function Home() {
     }
   };
 
-  // 0건 안전망: 키워드 검색이 0건이고 검색어가 한글 포함 6자 이상(숫자 허용)이면
-  // 같은 검색어를 AI 의미분석 라우트로 1회 자동 재시도 (무공백 문장 구제).
-  // 짧은 오타·제목/작가 검색은 재시도하지 않음. settledRef로 현재 검색어의 확정 결과만 대상.
-  useEffect(() => {
-    const q = query.trim();
-    if (aiMode || aiLoading || !q) return;
-    if (settledRef.current.q !== q || settledRef.current.count !== 0) return;
-    const qNorm = q.replace(/[^0-9가-힣]/g, "");
-    if (!/[가-힣]/.test(q) || qNorm.length < 6) return;
-    if (autoAiRef.current === q) return;
-    autoAiRef.current = q;
-    handleAiSearch(q);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resultCount, query, aiMode, aiLoading]);
+  // filterBooks(먼저 정의)가 최신 handleAiSearch를 호출하도록 ref 갱신
+  handleAiSearchRef.current = handleAiSearch;
 
   const addOrTag = (tag: string) => {
     setOrTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
