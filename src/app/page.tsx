@@ -12,6 +12,7 @@ import booksData from "../data/books.json";
 import confirmedCoversData from "../data/confirmed_covers.json";
 import BookCover from "../components/BookCover";
 import ReadingActivity from "../components/ReadingActivity";
+import LibraryMap, { type MapPin as LibMapPin } from "../components/LibraryMap";
 
 // ─── 타입 ────────────────────────────────────
 interface Book {
@@ -39,12 +40,14 @@ interface LibraryInfo {
   libName: string; address: string; tel: string; homepage: string;
   bookSearchUrl?: string | null;
   loanAvailable: boolean; distance?: number;
+  lat?: number; lng?: number;
 }
 
 interface SmallLibInfo {
   libName: string; address: string; manageCode: string;
   homepage?: string | null; bookSearchUrl?: string | null;
   loanAvailable: boolean; distance?: number; isSmall: true;
+  lat?: number | null; lng?: number | null;
 }
 
 // ─── 책 형태 배지 ─────────────────────────────
@@ -266,6 +269,7 @@ export default function Home() {
   const [libLoading,     setLibLoading]     = useState(false);
   const [smallLibraries,    setSmallLibraries]    = useState<SmallLibInfo[]>([]);
   const [smallLibLoading,   setSmallLibLoading]   = useState(false);
+  const [activeLibId,    setActiveLibId]    = useState<string | null>(null);
   const [userLocation,   setUserLocation]   = useState<{lat:number;lng:number}|null>(null);
   const [locationError,  setLocationError]  = useState("");
   const [showAll,        setShowAll]        = useState(false);
@@ -880,6 +884,7 @@ export default function Home() {
               homepage: lib.homepage,
               bookSearchUrl: lib.homepage ? buildUrl(lib.homepage) : null,
               distance: lib.distance,
+              lat: parseFloat(lib.latitude) || undefined, lng: parseFloat(lib.longitude) || undefined,
               loanAvailable: r.loanAvailable === "Y",
             };
           } catch { return null; }
@@ -895,6 +900,7 @@ export default function Home() {
               homepage: lib.homepage,
               bookSearchUrl: lib.homepage ? buildUrl(lib.homepage) : null,
               distance: lib.distance,
+              lat: parseFloat(lib.latitude) || undefined, lng: parseFloat(lib.longitude) || undefined,
               loanAvailable: false,
             }))
       );
@@ -916,8 +922,29 @@ export default function Home() {
     finally { setSmallLibLoading(false); }
   }, []);
 
+  // ── 도서관 지도 핀 (공공 → 작은도서관 순 번호) ─────────────
+  const libMapPins = useMemo<LibMapPin[]>(() => {
+    const out: LibMapPin[] = [];
+    libraries.forEach((lib, i) => {
+      if (lib.lat == null || lib.lng == null) return;
+      out.push({ id: `p-${i}`, no: i + 1, name: lib.libName, lat: lib.lat, lng: lib.lng, kind: "public",
+        loanAvailable: lib.loanAvailable, distance: lib.distance, link: lib.bookSearchUrl || lib.homepage });
+    });
+    smallLibraries.forEach((lib, i) => {
+      if (lib.lat == null || lib.lng == null) return;
+      out.push({ id: `s-${i}`, no: libraries.length + i + 1, name: lib.libName, lat: lib.lat, lng: lib.lng, kind: "small",
+        loanAvailable: lib.loanAvailable, distance: lib.distance, link: lib.bookSearchUrl });
+    });
+    return out;
+  }, [libraries, smallLibraries]);
+
+  const focusLibOnMap = (id: string) => {
+    setActiveLibId(id);
+    document.querySelector(".lm")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+
   const handleCheckLibrary = (book: Book) => {
-    setSelectedBook(book); setLibraries([]); setSmallLibraries([]);
+    setSelectedBook(book); setLibraries([]); setSmallLibraries([]); setActiveLibId(null);
     fetchLibraries(book, userLocation);
     fetchSmallLibraries(book, userLocation);
   };
@@ -1678,6 +1705,18 @@ export default function Home() {
               </div>
             )}
 
+            {!libLoading && libMapPins.length > 0 && (
+              <LibraryMap
+                pins={libMapPins}
+                userLocation={userLocation}
+                activeId={activeLibId}
+                onPinClick={(id) => {
+                  setActiveLibId(id);
+                  document.querySelector(`[data-lib-id="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                }}
+              />
+            )}
+
             {libLoading && (
               <div className="lib-loading">
                 <Loader2 size={22} className="spin" />
@@ -1696,9 +1735,14 @@ export default function Home() {
               </div>
             )}
             {!libLoading && libraries.map((lib, i) => (
-              <div key={i} className="lib-card">
+              <div key={i} data-lib-id={`p-${i}`}
+                className={`lib-card ${lib.lat != null ? "on-map" : ""} ${activeLibId === `p-${i}` ? "active" : ""}`}
+                onClick={() => { if (lib.lat != null) focusLibOnMap(`p-${i}`); }}>
                 <div className="lib-header">
-                  <span className="lib-name">{lib.libName}</span>
+                  <span className="lib-name">
+                    {lib.lat != null && <span className="lib-no" style={{ background: lib.loanAvailable ? "#2d9e4f" : "#9aa3ad" }}>{i + 1}</span>}
+                    {lib.libName}
+                  </span>
                   <span className={`loan-badge ${lib.loanAvailable ? "available" : "unavailable"}`}>
                     {lib.loanAvailable ? "대출 가능" : "대출 중"}
                   </span>
@@ -1711,7 +1755,7 @@ export default function Home() {
                 {(lib.bookSearchUrl || lib.homepage) && (
                   <a className="lib-link"
                     href={lib.bookSearchUrl || lib.homepage}
-                    target="_blank" rel="noopener noreferrer">
+                    target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                     도서관에서 이 책 바로 검색 →
                   </a>
                 )}
@@ -1740,9 +1784,14 @@ export default function Home() {
                   </div>
                 )}
                 {!smallLibLoading && smallLibraries.map((lib, i) => (
-                  <div key={i} className="lib-card small-lib-card">
+                  <div key={i} data-lib-id={`s-${i}`}
+                    className={`lib-card small-lib-card ${lib.lat != null ? "on-map" : ""} ${activeLibId === `s-${i}` ? "active" : ""}`}
+                    onClick={() => { if (lib.lat != null) focusLibOnMap(`s-${i}`); }}>
                     <div className="lib-header">
-                      <span className="lib-name">{lib.libName}</span>
+                      <span className="lib-name">
+                        {lib.lat != null && <span className="lib-no" style={{ background: "#d4880f" }}>{libraries.length + i + 1}</span>}
+                        {lib.libName}
+                      </span>
                       <span className={`loan-badge ${lib.loanAvailable ? "available" : "unavailable"}`}>
                         {lib.loanAvailable ? "대출 가능" : "대출 중"}
                       </span>
@@ -1754,7 +1803,7 @@ export default function Home() {
                     {lib.bookSearchUrl && (
                       <a className="lib-link"
                         href={lib.bookSearchUrl}
-                        target="_blank" rel="noopener noreferrer">
+                        target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                         작은도서관 바로가기 →
                       </a>
                     )}

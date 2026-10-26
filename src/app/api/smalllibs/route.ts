@@ -255,6 +255,8 @@ export async function GET(req: NextRequest) {
             bookSearchUrl: `${KNU_BASE}/${lib.MANAGE_CODE}`,
             loanAvailable,
             distance,
+            lat: SMALL_LIB_COORDS[lib.MANAGE_CODE]?.lat ?? null,
+            lng: SMALL_LIB_COORDS[lib.MANAGE_CODE]?.lng ?? null,
             isSmall: true,
           };
         } catch {
