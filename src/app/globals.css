@@ -1800,3 +1800,9 @@ body { word-break: keep-all; overflow-wrap: break-word; text-wrap: pretty; }
   border-radius: 1rem; color: #fff; font-size: .68rem; font-weight: 700;
   vertical-align: 1px;
 }
+.loan-badge.held { background: #fff7e6; color: #a8650a; border: 1px solid #f6d79b; white-space: nowrap; }
+.lib-header { align-items: flex-start; }
+.lib-header .lib-name { flex: 1; min-width: 0; }
+.lib-header .loan-badge { flex-shrink: 0; white-space: nowrap; }
+.lib-header .lib-name { display: flex; align-items: flex-start; }
+.lib-header .lib-no { flex-shrink: 0; margin-top: .1rem; }

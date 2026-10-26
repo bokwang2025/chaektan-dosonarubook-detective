@@ -84,7 +84,7 @@ function pinIcon(L: LeafletNS, p: MapPin, active: boolean) {
 
 function popupHtml(p: MapPin) {
   const status = p.kind === "small"
-    ? `작은도서관 · ${p.loanAvailable ? "대출 가능" : "대출 중"}`
+    ? "작은도서관 · 소장 (방문 전 문의)"
     : (p.loanAvailable ? "대출 가능" : "대출 중");
   const dist = p.distance !== undefined ? ` · ${p.distance.toFixed(1)}km` : "";
   const link = p.link

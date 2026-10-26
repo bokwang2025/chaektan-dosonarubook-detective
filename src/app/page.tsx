@@ -1770,7 +1770,7 @@ export default function Home() {
                   <span className="small-lib-note">작은도서관 정보누리 기준</span>
                 </div>
                 <div className="small-lib-disclaimer">
-                  ⚠️ 작은도서관은 소장 도서 일부만 knu에 등록되어 있어, 실제로 소장하고 있어도 검색 결과에 나타나지 않을 수 있어요. 미표시 시 도서관에 직접 문의해보세요.
+                  ⚠️ 작은도서관은 대출 현황이 실시간으로 반영되지 않아, 소장 여부만 보여 드려요. 방문 전에 도서관에 문의해 주세요. 소장 도서도 일부만 정보누리에 등록되어 있어 목록에 없는 곳에도 책이 있을 수 있어요.
                 </div>
                 {smallLibLoading && (
                   <div className="lib-loading">
@@ -1792,8 +1792,8 @@ export default function Home() {
                         {lib.lat != null && <span className="lib-no" style={{ background: "#d4880f" }}>{libraries.length + i + 1}</span>}
                         {lib.libName}
                       </span>
-                      <span className={`loan-badge ${lib.loanAvailable ? "available" : "unavailable"}`}>
-                        {lib.loanAvailable ? "대출 가능" : "대출 중"}
+                      <span className="loan-badge held" title="작은도서관은 대출 현황이 실시간으로 반영되지 않아요">
+                        소장 · 방문 전 문의
                       </span>
                     </div>
                     <div className="lib-addr">{lib.address}</div>
