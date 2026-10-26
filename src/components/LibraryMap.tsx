@@ -72,7 +72,7 @@ function esc(s: string) {
 
 function pinIcon(L: LeafletNS, p: MapPin, active: boolean) {
   const c = pinColor(p);
-  const size = active ? 38 : 30;
+  const size = active ? 36 : 28;
   return L.divIcon({
     className: "lm-pin-wrap",
     html: `<div class="lm-pin${active ? " active" : ""}" style="--pin:${c};width:${size}px;height:${size}px"><span>${p.no}</span></div>`,
@@ -142,7 +142,7 @@ export default function LibraryMap({ pins, userLocation, activeId, onPinClick }:
     if (userLocation) {
       L.marker([userLocation.lat, userLocation.lng], {
         icon: L.divIcon({ className: "lm-pin-wrap", html: '<div class="lm-me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }),
-        zIndexOffset: -100, keyboard: false,
+        zIndexOffset: 2000, keyboard: false, interactive: false,
       }).bindTooltip("내 위치", { direction: "top", offset: [0, -8] }).addTo(layer);
       pts.push([userLocation.lat, userLocation.lng]);
     }
@@ -156,8 +156,17 @@ export default function LibraryMap({ pins, userLocation, activeId, onPinClick }:
       pts.push([p.lat, p.lng]);
     });
 
-    if (pts.length === 1) map.setView(pts[0], 15);
-    else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [28, 28], maxZoom: 16 });
+    // 첫 화면: 내 위치가 있으면 가까운 곳(2.5km 이내, 최소 3곳)만 맞춰 확대 — 먼 핀은 축소하면 보임
+    let focus = pts;
+    if (userLocation) {
+      const near = [...pins].filter((p) => p.distance !== undefined)
+        .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+      const within = near.filter((p) => (p.distance ?? 99) <= 2.5);
+      const chosen = within.length >= 3 ? within : near.slice(0, 3);
+      if (chosen.length) focus = [[userLocation.lat, userLocation.lng], ...chosen.map((p) => [p.lat, p.lng] as [number, number])];
+    }
+    if (focus.length === 1) map.setView(focus[0], 15);
+    else if (focus.length > 1) map.fitBounds(L.latLngBounds(focus), { padding: [30, 30], maxZoom: 16 });
   }, [pins, userLocation, ready]);
 
   // 활성 핀 강조 + 팝업

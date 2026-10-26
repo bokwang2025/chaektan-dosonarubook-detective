@@ -1693,7 +1693,7 @@ export default function Home() {
             {!userLocation && (
               <div className="location-hint">
                 <MapPin size={13} />
-                <span>📍 위치 허용하면 <strong>2km 이내 가까운 도서관</strong> 순으로 표시돼요</span>
+                <span>📍 위치를 허용하면 <strong>내 주변 가까운 도서관</strong> 순으로 보여 드려요</span>
                 <button onClick={handleGetLocationInModal}>위치 허용 후 재검색</button>
               </div>
             )}
@@ -1701,7 +1701,7 @@ export default function Home() {
             {userLocation && (
               <div className="location-active">
                 <MapPin size={13} />
-                <span>내 위치 기준 2km 이내 · 가까운 순</span>
+                <span>내 위치 기준 · 가까운 순</span>
               </div>
             )}
 
@@ -1751,7 +1751,7 @@ export default function Home() {
                 {lib.distance !== undefined && (
                   <div className="lib-dist">📍 {lib.distance.toFixed(1)}km</div>
                 )}
-                {lib.tel && <div className="lib-tel">📞 {lib.tel}</div>}
+                {lib.tel && lib.tel.trim() !== "-" && <div className="lib-tel">📞 {lib.tel}</div>}
                 {(lib.bookSearchUrl || lib.homepage) && (
                   <a className="lib-link"
                     href={lib.bookSearchUrl || lib.homepage}
